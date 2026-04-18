@@ -1,5 +1,5 @@
 // tablahash.cpp
-#include "tablahash.h"
+#include "tablaHash.h"
 
 TablaHash::TablaHash(int capacidad)
     : capacidad(capacidad), tamano(0) {

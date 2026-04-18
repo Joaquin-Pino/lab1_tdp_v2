@@ -177,3 +177,17 @@ void Estado::setF(int nuevoF) {
 void Estado::setPiezasSalidas(unsigned int nuevasPiezasSalidas) {
     piezasSalidas = nuevasPiezasSalidas;
 }
+
+void Estado::setH(int nuevoH) {
+    h = nuevoH;
+}
+void Estado::setStepUsed(int nuevoStepUsed) {
+    stepUsed = nuevoStepUsed;
+}
+void Estado::setParent(Estado* nuevoParent) {
+    parent = nuevoParent;
+}
+void Estado::setMovimiento(const char* nuevoMovimiento) {
+    strncpy(movimiento, nuevoMovimiento, 10);
+    movimiento[9] = '\0'; // asegurar terminacion
+}

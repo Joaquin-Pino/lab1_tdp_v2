@@ -1,5 +1,5 @@
 // testTablaHash.cpp
-#include "tablahash.h"
+#include "tablaHash.h"
 #include "../estado/estado.h"
 #include <iostream>
 

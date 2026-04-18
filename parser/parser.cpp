@@ -147,7 +147,11 @@ void Parser::parsearSalidas() {
         coordenada pos = {x, y};
         salidas[idx] = Salida(idx, (int)colorChar, pos, esHorizontal,
                               (short)li, (short)lf, (short)paso);
-
+        
+        std::cout << "DEBUG salida: color=" << colorChar 
+                    << " pos=(" << x << "," << y << ")"
+                    << " orient=" << orient
+                    << " li=" << li << std::endl;
         // marcar celdas de la salida en la matriz
         for (int k = 0; k < li; k++) {
             int fila    = esHorizontal ? y       : y - k;
@@ -156,6 +160,14 @@ void Parser::parsearSalidas() {
                 matriz[fila * w + columna] = {SALIDA, idx};
         }
         idx++;
+        
+        for (int k = 0; k < li; k++) {
+        int fila    = esHorizontal ? y + k : y;
+        int columna = esHorizontal ? x     : x + k;
+        std::cout << "DEBUG marcando SALIDA en (" 
+                    << columna << "," << fila << ")" << std::endl;
+        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
+            matriz[fila * w + columna] = {SALIDA, idx};}
     }
 }
 

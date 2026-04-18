@@ -32,6 +32,8 @@ private:
     Compuerta* compuertas;
     int numPiezas, numSalidas, numCompuertas;
     int w, h, stepLimit;
+
+    bool esSalidaValida(int fila, int columna, const Pieza& pieza, const Estado& estado);
 public:
     Tablero();
     Tablero(celda* matriz, Pieza* piezas, Salida* salidas, Compuerta* compuertas, int numPiezas, int numSalidas, int numCompuertas, int w, int h, int stepLimit);

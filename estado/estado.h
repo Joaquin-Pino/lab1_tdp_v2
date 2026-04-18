@@ -42,10 +42,15 @@ private:
     int getH() const;
 
     void setF(int nuevoF);
-    Estado* getParent() const;
-    const char* getMovimiento() const;
 
-    void setPiezasSalidas(unsigned int nuevasPiezasSalidas);
+    void setH(int h);
+    void setStepUsed(int s);
+    void setParent(Estado* p);
+    void setMovimiento(const char* mov);
+    void setPiezasSalidas(unsigned int ps);
+    Estado* getParent() const;
+
+    const char* getMovimiento() const;
     
     bool piezaYaSalio(int idPieza) const;
     bool jugoTerminado(int numPiezas) const;
