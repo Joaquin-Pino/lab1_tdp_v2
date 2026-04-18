@@ -7,7 +7,9 @@ private:
     coordenada pos;
     short tamano;
     bool esVertical;
-    short Ci, Cf, paso;
+    short Ci; // color inicial
+    short Cf; // color final
+    short paso;
 
 public:
     Compuerta();
@@ -23,7 +25,7 @@ public:
     short getCf() const;
     short getPaso() const;
 
-    bool aceptaBloque(int tamano) const;
+    bool aceptaBloque(int colorBloque, int tamanoBloque, int colorActual) const;
 
     coordenada getCeldaPos(int i) const;
 };
