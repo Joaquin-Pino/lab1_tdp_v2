@@ -5,6 +5,7 @@ PIEZA     = ../pieza
 SALIDA    = ../salida
 COMPUERTA = ../compuerta
 ESTADO    = ../estado
+PARSER    = ../parser
 
 all: testTablero
 
@@ -32,5 +33,14 @@ testTablero: pieza.o salida.o compuerta.o estado.o tablero.o testTablero.o
 valgrind: testTablero
 	valgrind --leak-check=full --track-origins=yes ./testTablero
 
+parser.o: $(PARSER)/parser.cpp $(PARSER)/parser.h
+	$(CXX) $(CXXFLAGS) $(PARSER)/parser.cpp -o parser.o
+	
+testParser.o: $(PARSER)/testParser.cpp
+	$(CXX) $(CXXFLAGS) $(PARSER)/testParser.cpp -o testParser.o
+
+testParser: pieza.o salida.o compuerta.o estado.o tablero.o parser.o testParser.o
+	$(CXX) pieza.o salida.o compuerta.o estado.o tablero.o parser.o testParser.o -o testParser
+
 clean:
-	rm -f *.o testTablero
+	rm -f *.o testTablero testParser
