@@ -61,7 +61,7 @@ int main() {
         verificar(p.getPosInicial().y == 2,     "posInicial.y correcto");
         verificar(p.getGeometria() == geom,     "geometria apunta al arreglo original");
 
-        delete[] geom;
+        //delete[] geom;
     }
 
     // ── getCelda geometría llena ──
@@ -77,7 +77,7 @@ int main() {
         verificar(p.getCelda(0, 1) == true, "getCelda(0,1) true");
         verificar(p.getCelda(2, 1) == true, "getCelda(2,1) true");
 
-        delete[] geom;
+        //delete[] geom;
     }
 
     // ── getCelda geometría en L ──
@@ -92,7 +92,7 @@ int main() {
         verificar(p.getCelda(0, 1) == true,  "L(0,1) true");
         verificar(p.getCelda(1, 1) == true,  "L(1,1) true");
 
-        delete[] geom;
+        //delete[] geom;
     }
 
     // ── getCelda fuera de rango ──
@@ -117,7 +117,7 @@ int main() {
         catch (const std::out_of_range&) { excepcion = true; }
         verificar(excepcion, "lanza out_of_range con y negativo");
 
-        delete[] geom;
+        //delete[] geom;
     }
 
     std::cout << "\n===== RESULTADO =====" << std::endl;

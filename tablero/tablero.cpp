@@ -1,9 +1,6 @@
 #include "tablero.h"
 #include <iostream>
 
-// ─────────────────────────────────────────
-// Constructores y destructor
-// ─────────────────────────────────────────
 
 Tablero::Tablero() : matriz(nullptr), piezas(nullptr), salidas(nullptr),
     compuertas(nullptr), numPiezas(0), numSalidas(0),
@@ -80,9 +77,6 @@ Tablero::~Tablero() {
     delete[] compuertas;
 }
 
-// ─────────────────────────────────────────
-// Getters
-// ─────────────────────────────────────────
 
 celda* Tablero::getMatriz() const { return matriz; }
 Pieza* Tablero::getPiezas() const { return piezas; }
@@ -95,9 +89,7 @@ int Tablero::getW() const { return w; }
 int Tablero::getH() const { return h; }
 int Tablero::getStepLimit() const { return stepLimit; }
 
-// ─────────────────────────────────────────
-// Lógica del juego
-// ─────────────────────────────────────────
+
 
 bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
     Pieza& pieza = piezas[id];

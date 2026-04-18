@@ -7,13 +7,16 @@ private:
     short ancho, alto;
     int color;
     coordenada posInicial;
-    bool* geometria; // solo es de lectura, no es neceario ser dueno
+    bool* geometria; // solo es de lectura, necesario ser dueno
             // aplanamos el arreglo 2D para facilitar el acceso a la memoria y evitar problemas de punteros dobles
 
 public:
     Pieza();
     Pieza(int id, short ancho, short alto, int color, coordenada posInicial, bool* geometria);
+    // pieza toma ownership de geometria, se debe asegurar que el arreglo se libere correctamente
     ~Pieza();
+    Pieza(const Pieza& otra);
+    Pieza& operator=(const Pieza& otra);
 
     //getters
     int getId() const;
