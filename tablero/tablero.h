@@ -4,11 +4,17 @@
 #include "../salida/salida.h"
 #include "../compuerta/compuerta.h"
 
-enum celda{
+enum tipoCelda {
     VACIA,
     PARED,
     COMPUERTA,
-    PIEZA
+    PIEZA,
+    SALIDA
+};
+
+struct celda {
+    int tipo;       // VACIA, PARED, COMPUERTA, PIEZA, SALIDA
+    int id;         // id de la pieza, salida o compuerta. -1 si no aplica
 };
 
 enum direccion{
@@ -20,21 +26,33 @@ enum direccion{
 
 class Tablero {
 private:
-    celda** matriz;
+    celda* matriz;
     Pieza* piezas;
     Salida* salidas;
     Compuerta* compuertas;
     int numPiezas, numSalidas, numCompuertas;
     int w, h, stepLimit;
-
+public:
     Tablero();
-    Tablero(celda** matriz, Pieza* piezas, Salida* salidas, Compuerta* compuertas, int numPiezas, int numSalidas, int numCompuertas, int w, int h, int stepLimit);
+    Tablero(celda* matriz, Pieza* piezas, Salida* salidas, Compuerta* compuertas, int numPiezas, int numSalidas, int numCompuertas, int w, int h, int stepLimit);
     
     // regla de los 3
     Tablero(const Tablero& otro); // constructor de copia
     Tablero& operator=(const Tablero& otro); // operador de asignacion
     ~Tablero();
 
+    //getters
+    celda* getMatriz() const;
+    Pieza* getPiezas() const;
+    Salida* getSalidas() const;
+    Compuerta* getCompuertas() const;
+    int getNumPiezas() const;
+    int getNumSalidas() const;
+    int getNumCompuertas() const;
+    int getW() const;
+    int getH() const;
+    int getStepLimit() const;
+    
     // decidir si pasar estado como referencia o puntero
     bool piezaPuedeMoverse(int id, direccion dir, const Estado& estado);
     bool piezaPuedeSalir(int id, const Estado& estado);
@@ -42,4 +60,6 @@ private:
     int calcularLargoSalida(int idSalida, const Estado& estado);
     int calcularHeuristica(const Estado& estado);
     Estado* crearEstadoInicial() const;
+
+    void imprimir() const;
 };

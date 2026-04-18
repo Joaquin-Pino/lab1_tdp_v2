@@ -143,7 +143,7 @@ int Estado::getNumCompuertas() const {
 int Estado::getNumSalidas() const {
     return numSalidas;
 }
-coordenada* Estado::getPosPiezas() const {
+coordenada* Estado::getPosPiezas() const{
     return posPiezas;
 }
 int* Estado::getColorCompuertas() const {
