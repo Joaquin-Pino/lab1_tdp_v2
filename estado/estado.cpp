@@ -171,6 +171,9 @@ const char* Estado::getMovimiento() const {
     return movimiento;
 }   
 
+void Estado::setF(int nuevoF) {
+    f = nuevoF;
+}
 void Estado::setPiezasSalidas(unsigned int nuevasPiezasSalidas) {
     piezasSalidas = nuevasPiezasSalidas;
 }

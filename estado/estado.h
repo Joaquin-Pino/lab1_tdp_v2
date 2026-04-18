@@ -40,6 +40,8 @@ private:
     int getStepUsed() const;
     int getF() const;
     int getH() const;
+
+    void setF(int nuevoF);
     Estado* getParent() const;
     const char* getMovimiento() const;
 
