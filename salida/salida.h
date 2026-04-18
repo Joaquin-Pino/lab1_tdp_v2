@@ -25,6 +25,4 @@ public:
     short getPaso() const;
 
     bool aceptaBloque(int tamano, int largoActual) const;
-
-    coordenada getCeldaPos(int i) const;
 };
