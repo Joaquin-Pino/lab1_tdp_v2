@@ -12,19 +12,25 @@ private:
     coordenada* posPiezas; 
     int* colorCompuertas;
     short* largoSalidas;
+    int* ocupacion; // para saber si una posición del tablero está ocupada por una pieza
 
     unsigned int piezasSalidas; // bitmask de piezas que ya salieron
 
     int stepUsed;
     int f; // f = g + h, g = stepUsed
     int h; // heuristica, distancia de cada pieza a su salida
+    int width; // ancho del tablero
+    int height; // alto del tablero
 
     Estado* parent; // para reconstruir el camino
     char movimiento[10]; // para reconstruir el camino, el movimiento que se hizo para llegar a este estado
 
     public:   
     Estado();
-    Estado(int numPiezas, int numCompuertas, int numSalidas, coordenada* posPiezas, int* colorCompuertas, short* largoSalidas, unsigned int piezasSalidas, int stepUsed, int h, Estado* parent, const char* movimiento);
+    Estado(int numPiezas, int numCompuertas, int numSalidas, coordenada* posPiezas, 
+            int* colorCompuertas, short* largoSalidas, unsigned int piezasSalidas, 
+            int stepUsed, int h, int w, int height, Estado* parent, const char* movimiento, int* ocupacion);
+
     Estado(const Estado& otro); // constructor de copia
     Estado& operator=(const Estado& otro);
     ~Estado();
@@ -40,6 +46,7 @@ private:
     int getStepUsed() const;
     int getF() const;
     int getH() const;
+    int* getOcupacion() const;
 
     void setF(int nuevoF);
 

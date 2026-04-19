@@ -2,17 +2,17 @@
 #include "estado.h"
 
 Estado::Estado() : numPiezas(0), numCompuertas(0), numSalidas(0), 
-        posPiezas(nullptr), colorCompuertas(nullptr), largoSalidas(nullptr),
-        piezasSalidas(0), stepUsed(0), f(0), h(0), parent(nullptr) {
+        posPiezas(nullptr), colorCompuertas(nullptr), largoSalidas(nullptr), ocupacion(nullptr),
+        piezasSalidas(0), stepUsed(0), f(0), h(0), width(0), height(0), parent(nullptr) {
     movimiento[0] = '\0';
 }
 
 Estado::Estado(int numPiezas, int numCompuertas, int numSalidas,
                coordenada* posPiezas, int* colorCompuertas, short* largoSalidas,
-               unsigned int piezasSalidas, int stepUsed, int h, 
-               Estado* parent, const char* movimiento)
+               unsigned int piezasSalidas, int stepUsed, int h, int width, int height, 
+               Estado* parent, const char* movimiento, int* ocupacion)
     : numPiezas(numPiezas), numCompuertas(numCompuertas), numSalidas(numSalidas),
-      piezasSalidas(piezasSalidas), stepUsed(stepUsed), h(h), parent(parent) {
+      piezasSalidas(piezasSalidas), stepUsed(stepUsed), h(h), width(width), height(height), parent(parent) {
 
     f = stepUsed + h;
 
@@ -30,11 +30,15 @@ Estado::Estado(int numPiezas, int numCompuertas, int numSalidas,
 
     strncpy(this->movimiento, movimiento, 10);
     this->movimiento[9] = '\0';
+
+    this->ocupacion = new int[width * height];
+    for (int i = 0; i < width * height; i++)
+        this->ocupacion[i] = ocupacion[i];
 }
 
 Estado::Estado(const Estado& otro) : numPiezas(otro.numPiezas), numCompuertas(otro.numCompuertas), 
         numSalidas(otro.numSalidas), piezasSalidas(otro.piezasSalidas), stepUsed(otro.stepUsed), 
-        f(otro.f), h(otro.h), parent(otro.parent) {
+        f(otro.f), h(otro.h), height(otro.height), width(otro.width), parent(otro.parent) {
     // Copiar los arreglos, sin usar std::copy
 
     posPiezas = new coordenada[numPiezas];
@@ -54,6 +58,10 @@ Estado::Estado(const Estado& otro) : numPiezas(otro.numPiezas), numCompuertas(ot
     strncpy(movimiento, otro.movimiento, 10);
     this->movimiento[9] = '\0'; // asegurar terminacion
 
+    ocupacion = new int[width * height];
+    for (int i = 0; i < width * height; i++) {
+        this->ocupacion[i] = otro.ocupacion[i];
+    }
 }
 
 Estado& Estado::operator=(const Estado& otro) {
@@ -63,7 +71,7 @@ Estado& Estado::operator=(const Estado& otro) {
     delete[] posPiezas;
     delete[] colorCompuertas;
     delete[] largoSalidas;
-
+    delete[] ocupacion;
     // Copiar datos
     numPiezas = otro.numPiezas;
     numCompuertas = otro.numCompuertas;
@@ -73,6 +81,8 @@ Estado& Estado::operator=(const Estado& otro) {
     f = otro.f;
     h = otro.h;
     parent = otro.parent;
+    width  = otro.width;
+    height = otro.height;
 
     // Copiar los arreglos, sin usar std::copy
     posPiezas = new coordenada[numPiezas];
@@ -92,6 +102,11 @@ Estado& Estado::operator=(const Estado& otro) {
     strncpy(movimiento, otro.movimiento, 10);
     this->movimiento[9] = '\0'; // asegurar terminacion
 
+    ocupacion = new int[width * height];
+    for (int i = 0; i < width * height; i++) {
+        this->ocupacion[i] = otro.ocupacion[i];
+    }
+
     return *this;
 }
 
@@ -99,6 +114,7 @@ Estado::~Estado() {
     delete[] posPiezas;
     delete[] colorCompuertas;
     delete[] largoSalidas;
+    delete[] ocupacion;
 }
 
 bool Estado::piezaYaSalio(int idPieza) const {
@@ -190,4 +206,8 @@ void Estado::setParent(Estado* nuevoParent) {
 void Estado::setMovimiento(const char* nuevoMovimiento) {
     strncpy(movimiento, nuevoMovimiento, 10);
     movimiento[9] = '\0'; // asegurar terminacion
+}
+
+int* Estado::getOcupacion() const {
+    return ocupacion;
 }
