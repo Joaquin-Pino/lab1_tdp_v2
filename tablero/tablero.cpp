@@ -80,6 +80,14 @@ Tablero::~Tablero() {
 
 
 celda* Tablero::getMatriz() const { return matriz; }
+
+celda* Tablero::getCopiaMatriz() const {
+    celda* copia = new celda[w * h];
+    for (int i = 0; i < w * h; i++)
+        copia[i] = matriz[i];
+    return copia;
+}
+
 Pieza* Tablero::getPiezas() const { return piezas; }
 Salida* Tablero::getSalidas() const { return salidas; }
 Compuerta* Tablero::getCompuertas() const { return compuertas; }
@@ -249,9 +257,11 @@ int Tablero::calcularColorCompuerta(int idx, const Estado& estado) {
     return c.getCi() + (pasosCiclo % ciclo);
 }
 
-int Tablero::calcularLargoSalida(int idx, const Estado& estado) {
+int Tablero::calcularLargoSalida(int idx, const Estado& estado) const {
     Salida& s = salidas[idx];
+    //salida que no cambia de largo
     if (s.getLi() == s.getLf()) return s.getLi();
+    
     int rango = s.getLf() - s.getLi();
     int pasosCiclo = estado.getStepUsed() / s.getPaso();
     int pos = pasosCiclo % (2 * rango);

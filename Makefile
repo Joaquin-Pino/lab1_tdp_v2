@@ -10,6 +10,7 @@ TABLAHASH = tablaHash
 TABLERO   = tablero
 PARSER    = parser
 SOLVER    = solver
+IMPRESORA = impresora
 
 all: testMinHeap testTablaHash testSolver
 
@@ -67,5 +68,15 @@ valgrind_tablahash: testTablaHash
 valgrind_solver: testSolver
 	valgrind --leak-check=full --track-origins=yes ./testSolver
 
+impresora.o: $(IMPRESORA)/impresora.cpp $(IMPRESORA)/impresora.h
+	$(CXX) $(CXXFLAGS) $(IMPRESORA)/impresora.cpp -o impresora.o
+
+main.o: main.cpp
+	$(CXX) $(CXXFLAGS) main.cpp -o main.o
+
+main: pieza.o salida.o compuerta.o estado.o minheap.o tablaHash.o \
+      tablero.o parser.o solver.o impresora.o main.o
+	$(CXX) pieza.o salida.o compuerta.o estado.o minheap.o tablaHash.o \
+	       tablero.o parser.o solver.o impresora.o main.o -o main
 clean:
 	rm -f *.o testMinHeap testTablaHash testSolver

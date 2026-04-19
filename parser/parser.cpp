@@ -149,7 +149,7 @@ void Parser::parsearSalidas() {
         
         
         for (int k = 0; k < li; k++) {
-            int fila    = esHorizontal ? y       : y - k;
+            int fila    = esHorizontal ? y       : y + k;  // ← correcto, crece hacia abajo
             int columna = esHorizontal ? x + k   : x;
             if (fila >= 0 && fila < h && columna >= 0 && columna < w)
                 matriz[fila * w + columna] = {SALIDA, idx};

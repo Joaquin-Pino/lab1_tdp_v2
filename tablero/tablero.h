@@ -46,6 +46,7 @@ public:
 
     //getters
     celda* getMatriz() const;
+    celda *getCopiaMatriz() const;
     Pieza* getPiezas() const;
     Salida* getSalidas() const;
     Compuerta* getCompuertas() const;
@@ -60,7 +61,7 @@ public:
     bool piezaPuedeMoverse(int id, direccion dir, const Estado& estado);
     bool piezaPuedeSalir(int id, const Estado& estado);
     int calcularColorCompuerta(int idCompuerta, const Estado& estado);
-    int calcularLargoSalida(int idSalida, const Estado& estado);
+    int calcularLargoSalida(int idSalida, const Estado& estado) const;
     int calcularHeuristica(const Estado& estado);
     Estado* crearEstadoInicial() const;
 
