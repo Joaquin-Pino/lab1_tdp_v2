@@ -77,10 +77,10 @@ void Parser::parsearBloques() {
     Pieza temp[MAX_TEMP];
     numPiezas = 0;
 
-    std::cout << "DEBUG parsearBloques inicio" << std::endl;
+    // std::cout << "DEBUG parsearBloques inicio" << std::endl;
 
     while (leerLinea()) {
-        std::cout << "DEBUG linea: '" << lineaActual << "'" << std::endl;
+        // std::cout << "DEBUG linea: '" << lineaActual << "'" << std::endl;
         if (lineaActual[0] == '[') {
             // guardar esta línea para que construirTablero la procese
             // reposicionar antes de la sección
@@ -111,8 +111,7 @@ void Parser::parsearBloques() {
 
         numPiezas++;
     }
-    std::cout << "DEBUG numPiezas encontradas: " << numPiezas << std::endl;
-    // copiar al arreglo definitivo
+    
     piezas = new Pieza[numPiezas];
     for (int i = 0; i < numPiezas; i++)
         piezas[i] = temp[i];
@@ -148,11 +147,7 @@ void Parser::parsearSalidas() {
         salidas[idx] = Salida(idx, (int)colorChar, pos, esHorizontal,
                               (short)li, (short)lf, (short)paso);
         
-        std::cout << "DEBUG salida: color=" << colorChar 
-                    << " pos=(" << x << "," << y << ")"
-                    << " orient=" << orient
-                    << " li=" << li << std::endl;
-        // marcar celdas de la salida en la matriz
+        
         for (int k = 0; k < li; k++) {
             int fila    = esHorizontal ? y       : y - k;
             int columna = esHorizontal ? x + k   : x;
@@ -160,14 +155,6 @@ void Parser::parsearSalidas() {
                 matriz[fila * w + columna] = {SALIDA, idx};
         }
         idx++;
-        
-        for (int k = 0; k < li; k++) {
-        int fila    = esHorizontal ? y + k : y;
-        int columna = esHorizontal ? x     : x + k;
-        std::cout << "DEBUG marcando SALIDA en (" 
-                    << columna << "," << fila << ")" << std::endl;
-        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-            matriz[fila * w + columna] = {SALIDA, idx};}
     }
 }
 

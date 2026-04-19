@@ -25,11 +25,16 @@ int Solver::generarVecinos(Estado* actual) {
 
     direccion dirs[] = {ARRIBA, ABAJO, IZQUIERDA, DERECHA};
     const char* dirStr[] = {"U", "D", "L", "R"};
-
+    //std::cout << "stepLimit=" << tablero->getStepLimit() << std::endl;
     // aplicamos esto para cada pieza 
     for (int id = 0; id < numPiezas; id++) {
         if (actual->piezaYaSalio(id)) continue;
+        // std::cout << "DEBUG piezaPuedeSalir id=" << id
+        //   << " pos=(" << actual->getPosPiezas()[id].x
+        //   << "," << actual->getPosPiezas()[id].y << ")" << std::endl;
 
+        //   bool puedeSalir = tablero->piezaPuedeSalir(id, *actual);
+// std::cout << "DEBUG resultado piezaPuedeSalir=" << puedeSalir << std::endl;
         // verificar si puede salir antes de mover
         if (tablero->piezaPuedeSalir(id, *actual)) {
             Estado* vecino = new Estado(*actual);
@@ -59,6 +64,12 @@ int Solver::generarVecinos(Estado* actual) {
 
         // intentar mover en cada dirección
         for (int d = 0; d < 4; d++) {
+            // en generarVecinos, antes del if de piezaPuedeMoverse
+            // std::cout << "DEBUG intentando mover pieza " << id 
+            //             << " dir=" << dirs[d] 
+            //             << " pos=(" << actual->getPosPiezas()[id].x 
+            //             << "," << actual->getPosPiezas()[id].y << ")" << std::endl;
+
             if (!tablero->piezaPuedeMoverse(id, dirs[d], *actual)) continue;
 
             Estado* vecino = new Estado(*actual);
@@ -92,9 +103,11 @@ int Solver::generarVecinos(Estado* actual) {
             vecino->setParent(actual);
 
             // movimiento formato: "R<id>,1"
+            int idReal = tablero->getPiezas()[id].getId();
             char mov[10];
-            int idReal = tablero->getPiezas()[id].getId();  // id real del archivo
-            mov[0] = dirStr[d][0];
+            mov[0] = 'S';
+            mov[1] = '0' + idReal;
+            mov[2] = '\0';
             // formato: R<idReal>,1
             snprintf(mov, 10, "%c%d,1", dirStr[d][0], idReal);
             vecino->setMovimiento(mov);

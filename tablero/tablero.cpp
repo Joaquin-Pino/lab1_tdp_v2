@@ -204,12 +204,33 @@ bool Tablero::piezaPuedeSalir(int id, const Estado& estado) {
     return false;
 }
 
+// bool Tablero::piezaPuedeSalir(int id, const Estado& estado) {
+//     Pieza& pieza = piezas[id];
+//     coordenada pos = estado.getPosPiezas()[id];
+
+//     // borde derecho
+//     for (int i = 0; i < pieza.getAlto(); i++) {
+//         if (!pieza.getCelda(pieza.getAncho()-1, i)) continue;
+//         int fila    = pos.y + i;
+//         int columna = pos.x + pieza.getAncho();
+//         std::cout << "DEBUG borde derecho fila=" << fila 
+//                   << " columna=" << columna 
+//                   << " tipo=" << matriz[fila * w + columna].tipo << std::endl;
+//         if (fila >= 0 && fila < h && columna >= 0 && columna < w)
+//             if (esSalidaValida(fila, columna, pieza, estado)) return true;
+//     }
+//     return false;
+// }
+
 bool Tablero::esSalidaValida(int fila, int columna, 
                               const Pieza& pieza, const Estado& estado) {
     celda& c = matriz[fila * w + columna];
+    Salida& salida = salidas[c.id];
+    
+    //celda& c = matriz[fila * w + columna];
     if (c.tipo != SALIDA) return false;
 
-    Salida& salida = salidas[c.id];
+    //Salida& salida = salidas[c.id];
     // comprobamos color
     if (salida.getColor() != pieza.getColor()) return false;
 

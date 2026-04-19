@@ -42,6 +42,8 @@ void testSimple1() {
         // el enunciado dice que la solución es R1,1
         verificar(strcmp(solucion, "R1,1") == 0, "solución correcta: R1,1");
         delete[] solucion;
+    } else{
+        std::cout << "No se encontró solución" << std::endl;
     }
 
     delete estadoInicial;

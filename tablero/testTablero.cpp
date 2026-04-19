@@ -77,7 +77,7 @@ void testConstructorEImprimir() {
     verificar(m[0*5+0].tipo == PARED,  "celda (0,0) es PARED");
     verificar(m[1*5+1].tipo == VACIA,  "celda (1,1) es VACIA");
 
-    delete[] g0;
+    // delete[] g0;
 }
 
 // ─────────────────────────────────────────
@@ -107,7 +107,7 @@ void testCrearEstadoInicial() {
     verificar(!e->jugoTerminado(1),        "juego no terminado");
 
     delete e;
-    delete[] g0;
+    // delete[] g0;
 }
 
 // ─────────────────────────────────────────
@@ -133,7 +133,7 @@ void testPiezaPuedeMoverse() {
     verificar(!t.piezaPuedeMoverse(0, IZQUIERDA,  *e), "bloqueada por pared izquierda");
 
     delete e;
-    delete[] g0;
+    // delete[] g0;
 }
 
 // ─────────────────────────────────────────
@@ -164,8 +164,8 @@ void testColisionEntrePiezas() {
     verificar( t.piezaPuedeMoverse(1, ABAJO,      *e), "p1 puede ir abajo");
 
     delete e;
-    delete[] g0;
-    delete[] g1;
+    // delete[] g0;
+    // delete[] g1;
 }
 
 // ─────────────────────────────────────────
@@ -206,8 +206,8 @@ void testPiezaPuedeSalir() {
 
     delete e;
     delete e2;
-    delete[] g0;
-    delete[] g1;
+    // delete[] g0;
+    // delete[] g1;
 }
 
 // ─────────────────────────────────────────
@@ -236,7 +236,7 @@ void testHeuristica() {
     verificar(t.calcularHeuristica(*e) == 0, "heuristica 0 cuando pieza salio");
 
     delete e;
-    delete[] g0;
+    // delete[] g0;
 }
 
 // ─────────────────────────────────────────
@@ -261,7 +261,47 @@ void testConstructorCopia() {
     verificar(copia.getMatriz()     != original.getMatriz(),    "matriz distinta en memoria");
     verificar(copia.getPiezas()     != original.getPiezas(),    "piezas distinta en memoria");
 
-    delete[] g0;
+    // delete[] g0;
+}
+
+void testEsSalidaValida() {
+    std::cout << "\n-- esSalidaValida --" << std::endl;
+
+    celda* mat = crearMatriz5x5();
+    // mat tiene SALIDA en (1,4) con id=0
+    
+    bool* g0      = geomSolida(1, 1);
+    Pieza* piezas = new Pieza[1];
+    piezas[0]     = Pieza(0, 1, 1, 1, {1, 1}, g0);
+
+    Salida* salidas = new Salida[1];
+    salidas[0]      = Salida(0, 1, {4, 1}, false, 2, 2, 1);
+    Compuerta* comp = new Compuerta[0];
+
+    Tablero t(mat, piezas, salidas, comp, 1, 1, 0, 5, 5, 50);
+    Estado* e = t.crearEstadoInicial();
+
+    // celda SALIDA con color correcto y tamaño correcto
+    verificar(t.esSalidaValida(1, 4, piezas[0], *e),
+              "celda (1,4) es salida valida para pieza color 1");
+
+    // celda VACIA → no es salida
+    verificar(!t.esSalidaValida(1, 1, piezas[0], *e),
+              "celda (1,1) VACIA no es salida valida");
+
+    // celda PARED → no es salida
+    verificar(!t.esSalidaValida(0, 0, piezas[0], *e),
+              "celda (0,0) PARED no es salida valida");
+
+    // color incorrecto
+    bool* g1      = geomSolida(1, 1);
+    Pieza* p2     = new Pieza[1];
+    p2[0]         = Pieza(1, 1, 1, 2, {1, 1}, g1);  // color 2, salida es color 1
+    verificar(!t.esSalidaValida(1, 4, p2[0], *e),
+              "color incorrecto no es salida valida");
+
+    delete e;
+    delete[] p2;
 }
 
 // ─────────────────────────────────────────
@@ -272,6 +312,7 @@ int main() {
     testCrearEstadoInicial();
     testPiezaPuedeMoverse();
     testColisionEntrePiezas();
+    testEsSalidaValida(); 
     testPiezaPuedeSalir();
     testHeuristica();
     testConstructorCopia();
