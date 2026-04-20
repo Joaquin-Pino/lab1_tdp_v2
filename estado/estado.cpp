@@ -211,3 +211,49 @@ void Estado::setMovimiento(const char* nuevoMovimiento) {
 short* Estado::getOcupacion() const {
     return ocupacion;
 }
+
+void Estado::moverPieza(int id, int dx, int dy, const Pieza& pieza, int w) {
+    coordenada& pos = posPiezas[id];
+
+    // limpiar ocupacion anterior
+    for (int i = 0; i < pieza.getAlto(); i++) {
+        for (int j = 0; j < pieza.getAncho(); j++) {
+            if (!pieza.getCelda(j, i)) continue;
+            ocupacion[(pos.y+i)*w + (pos.x+j)] = -1;
+        }
+    }
+
+    // aplicar movimiento
+    pos.x += dx;
+    pos.y += dy;
+
+    // marcar nueva ocupacion
+    for (int i = 0; i < pieza.getAlto(); i++) {
+        for (int j = 0; j < pieza.getAncho(); j++) {
+            if (!pieza.getCelda(j, i)) continue;
+            ocupacion[(pos.y+i)*w + (pos.x+j)] = id;
+        }
+    }
+
+    stepUsed++;
+    f = stepUsed + h;
+}
+
+void Estado::sacarPieza(int id, const Pieza& pieza, int w) {
+    coordenada& pos = posPiezas[id];
+    for (int i = 0; i < pieza.getAlto(); i++) {
+        for (int j = 0; j < pieza.getAncho(); j++) {
+            if (!pieza.getCelda(j, i)) continue;
+            ocupacion[(pos.y+i)*w + (pos.x+j)] = -1;
+        }
+    }
+    piezasSalidas |= (1u << id);
+}
+
+void Estado::actualizarCompuerta(int idx, int color) {
+    colorCompuertas[idx] = color;
+}
+
+void Estado::actualizarSalida(int idx, short largo) {
+    largoSalidas[idx] = largo;
+}

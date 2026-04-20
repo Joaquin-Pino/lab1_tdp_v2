@@ -64,5 +64,9 @@ private:
     bool jugoTerminado(int numPiezas) const;
     unsigned int generarHash() const;
 
-    void limpiarOcuapcion(const Pieza& pieza, coordenada posActual, Estado* vecino);
+    
+    void moverPieza(int id, int dx, int dy, const Pieza& pieza, int w);
+    void sacarPieza(int id, const Pieza& pieza, int w);
+    void actualizarCompuerta(int idx, int color);
+    void actualizarSalida(int idx, short largo);
 };
