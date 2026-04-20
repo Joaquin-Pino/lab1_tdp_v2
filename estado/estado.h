@@ -1,5 +1,6 @@
 #pragma once
 #include "../common/coordenada.h"
+#include "../pieza/pieza.h"
 
 
 class Estado{
@@ -62,4 +63,6 @@ private:
     bool piezaYaSalio(int idPieza) const;
     bool jugoTerminado(int numPiezas) const;
     unsigned int generarHash() const;
+
+    void limpiarOcuapcion(const Pieza& pieza, coordenada posActual, Estado* vecino);
 };

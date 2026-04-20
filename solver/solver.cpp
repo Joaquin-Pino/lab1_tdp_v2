@@ -26,30 +26,36 @@ Solver::~Solver() {
 int Solver::generarVecinos(Estado* actual) {
     int count = 0;
     int numPiezas = tablero->getNumPiezas();
+    int w = tablero->getW();
 
     direccion dirs[] = {ARRIBA, ABAJO, IZQUIERDA, DERECHA};
     const char* dirStr[] = {"U", "D", "L", "R"};
-    // aplicamos esto para cada pieza 
+
     for (int id = 0; id < numPiezas; id++) {
         if (actual->piezaYaSalio(id)) continue;
+
+        Pieza& pieza = tablero->getPiezas()[id];
+        coordenada posActual = actual->getPosPiezas()[id];
 
         // verificar si puede salir antes de mover
         if (tablero->piezaPuedeSalir(id, *actual)) {
             Estado* vecino = new Estado(*actual);
 
-            // sacar pieza: lo marcamos en el bitmask
-            vecino->setPiezasSalidas(
-                actual->getPiezasSalidas() | (1u << id)
-            );
+            // limpiar ocupacion de la pieza que sale
+            for (int i = 0; i < pieza.getAlto(); i++) {
+                for (int j = 0; j < pieza.getAncho(); j++) {
+                    if (!pieza.getCelda(j, i)) continue;
+                    vecino->getOcupacion()[(posActual.y+i)*w + (posActual.x+j)] = -1;
+                }
+            }
 
-            // actualizar compuertas y salidas según nuevo stepUsed
-            // (stepUsed no cambia al sacar, solo al mover)
+            vecino->setPiezasSalidas(actual->getPiezasSalidas() | (1u << id));
+
             int h = tablero->calcularHeuristica(*vecino);
             vecino->setH(h);
             vecino->setF(vecino->getStepUsed() + h);
             vecino->setParent(actual);
 
-            // movimiento formato: "S<id>"
             int idReal = tablero->getPiezas()[id].getId();
             char mov[10];
             snprintf(mov, 10, "S%d", idReal);
@@ -61,10 +67,17 @@ int Solver::generarVecinos(Estado* actual) {
 
         // intentar mover en cada dirección
         for (int d = 0; d < 4; d++) {
-
             if (!tablero->piezaPuedeMoverse(id, dirs[d], *actual)) continue;
 
             Estado* vecino = new Estado(*actual);
+
+            // limpiar ocupacion anterior
+            for (int i = 0; i < pieza.getAlto(); i++) {
+                for (int j = 0; j < pieza.getAncho(); j++) {
+                    if (!pieza.getCelda(j, i)) continue;
+                    vecino->getOcupacion()[(posActual.y+i)*w + (posActual.x+j)] = -1;
+                }
+            }
 
             // aplicar movimiento
             coordenada* pos = vecino->getPosPiezas();
@@ -75,16 +88,23 @@ int Solver::generarVecinos(Estado* actual) {
                 case DERECHA:   pos[id].x++; break;
             }
 
+            // marcar nueva ocupacion
+            coordenada posNueva = vecino->getPosPiezas()[id];
+            for (int i = 0; i < pieza.getAlto(); i++) {
+                for (int j = 0; j < pieza.getAncho(); j++) {
+                    if (!pieza.getCelda(j, i)) continue;
+                    vecino->getOcupacion()[(posNueva.y+i)*w + (posNueva.x+j)] = id;
+                }
+            }
+
             // incrementar step y actualizar compuertas/salidas
             int newStep = vecino->getStepUsed() + 1;
             vecino->setStepUsed(newStep);
 
-            // actualizar color de compuertas
             for (int i = 0; i < tablero->getNumCompuertas(); i++)
                 vecino->getColorCompuertas()[i] =
                     tablero->calcularColorCompuerta(i, *vecino);
 
-            // actualizar largo de salidas
             for (int i = 0; i < tablero->getNumSalidas(); i++)
                 vecino->getLargoSalidas()[i] =
                     tablero->calcularLargoSalida(i, *vecino);
@@ -94,10 +114,8 @@ int Solver::generarVecinos(Estado* actual) {
             vecino->setF(newStep + h);
             vecino->setParent(actual);
 
-            // movimiento formato: "R<id>,1"
             int idReal = tablero->getPiezas()[id].getId();
             char mov[10];
-            // formato: R<idReal>,1
             snprintf(mov, 10, "%c%d,1", dirStr[d][0], idReal);
             vecino->setMovimiento(mov);
 
