@@ -27,7 +27,7 @@ unsigned int TablaHash::calcularHash(const Estado* e) const {
 bool TablaHash::sonIguales(const Estado* a, const Estado* b) const {
     if (a->getNumPiezas() != b->getNumPiezas())         return false;
     if (a->getPiezasSalidas() != b->getPiezasSalidas()) return false;
-    if (a->getStepUsed() != b->getStepUsed())           return false;
+    //if (a->getStepUsed() != b->getStepUsed())           return false;
 
     for (int i = 0; i < a->getNumPiezas(); i++) {
         if (a->getPosPiezas()[i].x != b->getPosPiezas()[i].x ||
@@ -68,4 +68,14 @@ bool TablaHash::existe(const Estado* e) const {
 
 int TablaHash::getTamano() const {
     return tamano;
+}
+
+void TablaHash::liberarEstados() {
+    for (int i = 0; i < capacidad; i++) {
+        Nodo* actual = tabla[i];
+        while (actual) {
+            delete actual->estado;
+            actual = actual->siguiente;
+        }
+    }
 }

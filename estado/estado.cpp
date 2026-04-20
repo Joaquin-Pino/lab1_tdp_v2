@@ -10,7 +10,7 @@ Estado::Estado() : numPiezas(0), numCompuertas(0), numSalidas(0),
 Estado::Estado(int numPiezas, int numCompuertas, int numSalidas,
                coordenada* posPiezas, int* colorCompuertas, short* largoSalidas,
                unsigned int piezasSalidas, int stepUsed, int h, int width, int height, 
-               Estado* parent, const char* movimiento, int* ocupacion)
+               Estado* parent, const char* movimiento, short* ocupacion)
     : numPiezas(numPiezas), numCompuertas(numCompuertas), numSalidas(numSalidas),
       piezasSalidas(piezasSalidas), stepUsed(stepUsed), h(h), width(width), height(height), parent(parent) {
 
@@ -31,7 +31,7 @@ Estado::Estado(int numPiezas, int numCompuertas, int numSalidas,
     strncpy(this->movimiento, movimiento, 10);
     this->movimiento[9] = '\0';
 
-    this->ocupacion = new int[width * height];
+    this->ocupacion = new short[width * height];
     for (int i = 0; i < width * height; i++)
         this->ocupacion[i] = ocupacion[i];
 }
@@ -58,7 +58,7 @@ Estado::Estado(const Estado& otro) : numPiezas(otro.numPiezas), numCompuertas(ot
     strncpy(movimiento, otro.movimiento, 10);
     this->movimiento[9] = '\0'; // asegurar terminacion
 
-    ocupacion = new int[width * height];
+    ocupacion = new short[width * height];
     for (int i = 0; i < width * height; i++) {
         this->ocupacion[i] = otro.ocupacion[i];
     }
@@ -102,7 +102,7 @@ Estado& Estado::operator=(const Estado& otro) {
     strncpy(movimiento, otro.movimiento, 10);
     this->movimiento[9] = '\0'; // asegurar terminacion
 
-    ocupacion = new int[width * height];
+    ocupacion = new short[width * height];
     for (int i = 0; i < width * height; i++) {
         this->ocupacion[i] = otro.ocupacion[i];
     }
@@ -208,6 +208,6 @@ void Estado::setMovimiento(const char* nuevoMovimiento) {
     movimiento[9] = '\0'; // asegurar terminacion
 }
 
-int* Estado::getOcupacion() const {
+short* Estado::getOcupacion() const {
     return ocupacion;
 }

@@ -92,10 +92,14 @@ void Parser::parsearBloques() {
         if (sscanf(lineaActual, "%d COLOR=%c WIDTH=%d HEIGHT=%d INIT_X=%d INIT_Y=%d",
                    &id, &colorChar, &bw, &bh, &initX, &initY) != 6) continue;
 
+       
+        
         bool* geom = new bool[bw * bh];
         char* ptr = strstr(lineaActual, "GEOMETRY=");
+        
         if (ptr) {
             ptr += strlen("GEOMETRY=");
+            
             for (int k = 0; k < bw * bh; k++) {
                 while (*ptr == ' ') ptr++;
                 geom[k] = (*ptr == '1');
@@ -156,42 +160,38 @@ void Parser::parsearSalidas() {
 }
 
 void Parser::parsearCompuertas() {
-    // primera pasada: contar
-    long posInicio = ftell(archivo);
+    const int MAX_TEMP = 100;
+    Compuerta temp[MAX_TEMP];
     numCompuertas = 0;
 
     while (leerLinea()) {
-        if (lineaActual[0] == '[') break;
-        if (lineaActual[0] != '\0' && lineaActual[0] != '\n')
-            numCompuertas++;
-    }
-
-    fseek(archivo, posInicio, SEEK_SET);
-    compuertas = new Compuerta[numCompuertas];
-    int idx = 0;
-
-    while (idx < numCompuertas && leerLinea()) {
-        if (lineaActual[0] == '[') return;
+        if (lineaActual[0] == '[') {
+            tieneLineaPendiente = true;
+            break;
+        }
+        if (lineaActual[0] == '\0') continue;
 
         char orient;
-        int x, y, ci, cf, paso;
-        short tamano = 1;  // las compuertas ocupan 1 celda
+        int x, y, li, ci, cf, paso;
+        short tamano = 1;
 
-        // formato: COLOR=c X=x Y=y ORIENTATION=H,V CI=n CF=n STEP=n
-        if (sscanf(lineaActual, "COLOR=%*c X=%d Y=%d ORIENTATION=%c CI=%d CF=%d STEP=%d",
-                   &x, &y, &orient, &ci, &cf, &paso) != 6) continue;
+        if (sscanf(lineaActual, "COLOR=%*c X=%d Y=%d ORIENTATION=%c LI=%d CI=%d CF=%d STEP=%d",
+           &x, &y, &orient, &li, &ci, &cf, &paso) != 7) continue;
 
         bool esVertical = (orient == 'V');
         coordenada pos = {x, y};
-        compuertas[idx] = Compuerta(idx, pos, tamano, esVertical,
-                                    (short)ci, (short)cf, (short)paso);
+        temp[numCompuertas] = Compuerta(numCompuertas, pos, tamano, esVertical,
+                                        (short)ci, (short)cf, (short)paso);
 
-        // marcar celda de la compuerta en la matriz
         if (y >= 0 && y < h && x >= 0 && x < w)
-            matriz[y * w + x] = {COMPUERTA, idx};
+            matriz[y * w + x] = {COMPUERTA, numCompuertas};
 
-        idx++;
+        numCompuertas++;
     }
+
+    compuertas = new Compuerta[numCompuertas];
+    for (int i = 0; i < numCompuertas; i++)
+        compuertas[i] = temp[i];
 }
 
 Tablero* Parser::construirTablero() {

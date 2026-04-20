@@ -56,7 +56,7 @@ short Pieza::getAlto() const {
     return alto;
 }
 int Pieza::getColor() const {
-    return color;
+    return color; // convertir de char a int (0 para 'a', 1 para 'b', etc.)
 }
 coordenada Pieza::getPosInicial() const {
     return posInicial;

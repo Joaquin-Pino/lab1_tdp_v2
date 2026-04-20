@@ -13,10 +13,14 @@ Solver::Solver(Tablero* t)
 }
 
 Solver::~Solver() {
+    while (!openSet->estaVacio()) {
+        Estado* e = openSet->pop();
+        delete e;
+    }
+    closedSet->liberarEstados();  // libera los Estado*
     delete openSet;
     delete closedSet;
     delete[] vecinosTemp;
-    // no liberar tablero — no es dueño
 }
 
 int Solver::generarVecinos(Estado* actual) {
@@ -125,6 +129,7 @@ Estado** Solver::reconstruirCamino(Estado* final) {
 }
 
 Estado** Solver::resolver(Estado* estadoInicial) {
+    
     // calcular heuristica inicial
     int h = tablero->calcularHeuristica(*estadoInicial);
     estadoInicial->setH(h);

@@ -22,7 +22,7 @@ void verificar(bool condicion, const char* nombreTest) {
 void testSimple1() {
     std::cout << "\n-- simple1.cfg --" << std::endl;
 
-    Parser parser("simple1.cfg");
+    Parser parser("tableroMedio.cfg");
     Tablero* tablero = parser.construirTablero();
     verificar(tablero != nullptr, "tablero cargado correctamente");
     if (!tablero) return;

@@ -26,4 +26,6 @@ public:
     void insertar(Estado* e);
     bool existe(const Estado* e) const;
     int getTamano() const;
+
+    void liberarEstados();
 };

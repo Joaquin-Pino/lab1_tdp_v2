@@ -128,6 +128,8 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
             // si se quiere mover a compuerta, verificar si la pieza puede pasar por esa compuerta
             if (c.tipo == COMPUERTA) {
                 int colorActual = calcularColorCompuerta(c.id, estado);
+                std::cout << "DEBUG Intentando mover pieza " << id << " a compuerta " << c.id
+                          << " con color actual " << colorActual << "Color de la pieza: " << pieza.getColor() << std::endl;
                 int tamano = (dir == ARRIBA || dir == ABAJO) ? pieza.getAncho() : pieza.getAlto();
                 
                 // vemos si pieza puede pasar por la compuerta, verificando tamano y color del bloque
@@ -136,7 +138,7 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
             }
             
             // verificamos en matriz de ocupacion del estado para ver si la celda está ocupada por otra pieza
-            int* ocupacion = estado.getOcupacion();
+            short* ocupacion = estado.getOcupacion();
             // si la celda a la que queremos movernos está ocupada por otra pieza (id diferente y no vacía)
             if (ocupacion[fila * w + columna] != -1 && ocupacion[fila * w + columna] != id)
                 return false;
@@ -282,7 +284,7 @@ Estado* Tablero::crearEstadoInicial() const {
         largosSalidas[i] = salidas[i].getLi();
 
     // marcar ocupacion inicial del tablero según las piezas
-    int* ocupacion = new int[w * h];
+    short* ocupacion = new short[w * h];
     for (int i = 0; i < w * h; i++) {
         ocupacion[i] = -1;
     } // -1 significa sin pieza
