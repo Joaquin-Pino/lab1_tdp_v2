@@ -15,6 +15,7 @@ private:
 
     int generarVecinos(Estado* actual);
     Estado** reconstruirCamino(Estado* final);
+    int calcularHeuristica(const Estado& estado) const;
 
 public:
     Solver(Tablero* t);

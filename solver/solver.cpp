@@ -42,7 +42,7 @@ int Solver::generarVecinos(Estado* actual) {
             Estado* vecino = new Estado(*actual);
             vecino->sacarPieza(id, pieza, w);
 
-            int h = tablero->calcularHeuristica(*vecino);
+            int h = calcularHeuristica(*vecino);
             vecino->setH(h);
             vecino->setF(vecino->getStepUsed() + h);
             vecino->setParent(actual);
@@ -54,7 +54,8 @@ int Solver::generarVecinos(Estado* actual) {
             vecinosTemp[count++] = vecino;
             continue;
         }
-
+        
+        // mover las piezas
         for (int d = 0; d < 4; d++) {
             if (!tablero->piezaPuedeMoverse(id, dirs[d], *actual)) continue;
 
@@ -69,7 +70,7 @@ int Solver::generarVecinos(Estado* actual) {
                 vecino->actualizarSalida(i,
                     tablero->calcularLargoSalida(i, *vecino));
 
-            int h = tablero->calcularHeuristica(*vecino);
+            int h = calcularHeuristica(*vecino);
             vecino->setH(h);
             vecino->setF(vecino->getStepUsed() + h);
             vecino->setParent(actual);
@@ -83,12 +84,14 @@ int Solver::generarVecinos(Estado* actual) {
     }
     return count;
 }
+
 Estado** Solver::reconstruirCamino(Estado* final) {
     // contar pasos
     int numPasos = 0;
     Estado* actual = final;
     while (actual != nullptr) {
         numPasos++;
+        int calcularHeuristica(const Estado& estado);
         actual = actual->getParent();
     }
 
@@ -105,33 +108,24 @@ Estado** Solver::reconstruirCamino(Estado* final) {
 }
 
 Estado** Solver::resolver(Estado* estadoInicial) {
-    
-    // calcular heuristica inicial
-    int h = tablero->calcularHeuristica(*estadoInicial);
+    int h = calcularHeuristica(*estadoInicial);
     estadoInicial->setH(h);
     estadoInicial->setF(estadoInicial->getStepUsed() + h);
     estadoInicial->setParent(nullptr);
-
     openSet->push(estadoInicial);
 
     while (!openSet->estaVacio()) {
         Estado* actual = openSet->pop();
 
-        // verificar si ya fue visitado
         if (closedSet->existe(actual)) {
             delete actual;
             continue;
         }
 
-        // verificar si es solución
         if (actual->jugoTerminado(tablero->getNumPiezas())) {
-            Estado** solucion = reconstruirCamino(actual);
-            // limpiar estados en openSet
-            // los estados del camino se mantienen vía punteros padre
-            return solucion;
+            return reconstruirCamino(actual);
         }
 
-        // verificar step limit
         if (actual->getStepUsed() >= tablero->getStepLimit()) {
             delete actual;
             continue;
@@ -139,7 +133,6 @@ Estado** Solver::resolver(Estado* estadoInicial) {
 
         closedSet->insertar(actual);
 
-        // generar vecinos
         int numVecinos = generarVecinos(actual);
         for (int i = 0; i < numVecinos; i++) {
             if (!closedSet->existe(vecinosTemp[i]))
@@ -148,6 +141,20 @@ Estado** Solver::resolver(Estado* estadoInicial) {
                 delete vecinosTemp[i];
         }
     }
-
-    return nullptr;  // sin solución
+    return nullptr;
+}
+int Solver::calcularHeuristica(const Estado& estado) const {
+    int total = 0;
+    for (int i = 0; i < tablero->getNumPiezas(); i++) {
+        if (estado.piezaYaSalio(i)) continue;
+        coordenada pos = estado.getPosPiezas()[i];
+        for (int j = 0; j < tablero->getNumSalidas(); j++) {
+            if (tablero->getSalidas()[j].getColor() != 
+                tablero->getPiezas()[i].getColor()) continue;
+            coordenada posSalida = tablero->getSalidas()[j].getPos();
+            total += abs(pos.x - posSalida.x) + abs(pos.y - posSalida.y);
+            break;
+        }
+    }
+    return total;
 }

@@ -62,7 +62,6 @@ public:
     bool piezaPuedeSalir(int id, const Estado& estado);
     int calcularColorCompuerta(int idCompuerta, const Estado& estado);
     int calcularLargoSalida(int idSalida, const Estado& estado) const;
-    int calcularHeuristica(const Estado& estado);
     Estado* crearEstadoInicial() const;
 
     void imprimir() const;

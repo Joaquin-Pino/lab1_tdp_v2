@@ -120,30 +120,32 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
             // verificar limites del tablero
             if (fila <= 0 || fila >= h || columna <= 0 || columna >= w)
                 return false;
-
+            
+            // verificamos en matriz de ocupacion del estado para ver si la celda está ocupada por otra pieza
+            short* ocupacion = estado.getOcupacion();
+            // si la celda a la que queremos movernos está ocupada por otra pieza (id diferente y no vacía)
+            if (ocupacion[fila * w + columna] != -1 && ocupacion[fila * w + columna] != id) {
+                return false;
+            }
+                
             // verificar obstáculos estáticos en la matriz
             celda& c = matriz[fila * w + columna];
             if (c.tipo == PARED) return false;
 
             // si se quiere mover a compuerta, verificar si la pieza puede pasar por esa compuerta
+            
             if (c.tipo == COMPUERTA) {
+                // TODO: verificar orientacion de compuerta
+                
                 int colorActual = calcularColorCompuerta(c.id, estado);
-                std::cout << "DEBUG Intentando mover pieza " << id << " a compuerta " << c.id
-                          << " con color actual " << colorActual << "Color de la pieza: " << pieza.getColor() << std::endl;
+                // std::cout << "DEBUG Intentando mover pieza " << id << " a compuerta " << c.id
+                //           << " con color actual " << colorActual << "Color de la pieza: " << pieza.getColor() << std::endl;
                 int tamano = (dir == ARRIBA || dir == ABAJO) ? pieza.getAncho() : pieza.getAlto();
                 
                 // vemos si pieza puede pasar por la compuerta, verificando tamano y color del bloque
                 if (!compuertas[c.id].aceptaBloque(pieza.getColor(), tamano, colorActual))
                     return false;
             }
-            
-            // verificamos en matriz de ocupacion del estado para ver si la celda está ocupada por otra pieza
-            short* ocupacion = estado.getOcupacion();
-            // si la celda a la que queremos movernos está ocupada por otra pieza (id diferente y no vacía)
-            if (ocupacion[fila * w + columna] != -1 && ocupacion[fila * w + columna] != id)
-                return false;
-
-            
         }
     }
     return true;
@@ -233,41 +235,7 @@ int Tablero::calcularLargoSalida(int idx, const Estado& estado) const {
         return s.getLf() - (pos - rango);
 }
 
-int Tablero::calcularHeuristica(const Estado& estado) {
-    int total = 0;
-    for (int i = 0; i < numPiezas; i++) {
-        if (estado.piezaYaSalio(i)) continue;
-
-        coordenada pos = estado.getPosPiezas()[i];
-
-        for (int j = 0; j < numSalidas; j++) {
-            if (salidas[j].getColor() != piezas[i].getColor()) continue;
-
-            coordenada posSalida = salidas[j].getPos();
-            int dist = (pos.x > posSalida.x ? pos.x - posSalida.x : posSalida.x - pos.x)
-                     + (pos.y > posSalida.y ? pos.y - posSalida.y : posSalida.y - pos.y);
-
-            // si la pieza ya está adyacente pero la salida no acepta
-            // agregar el número de pasos que faltan para que la salida abra
-            if (dist <= 1) {
-                int largoActual = estado.getLargoSalidas()[j];
-                int tamano = salidas[j].getEsHorizontal() ?
-                             piezas[i].getAncho() : piezas[i].getAlto();
-                if (!salidas[j].aceptaBloque(tamano, largoActual)) {
-                    // calcular cuántos pasos faltan para que la salida abra
-                    int paso = salidas[j].getPaso();
-                    if (paso > 0) total += paso;
-                    else total += 1;
-                }
-            }
-
-            total += dist;
-            break;
-        }
-    }
-    return total;
-}
-
+// esto se deberia encargar solver
 Estado* Tablero::crearEstadoInicial() const {
     coordenada* posiciones = new coordenada[numPiezas];
     for (int i = 0; i < numPiezas; i++)
