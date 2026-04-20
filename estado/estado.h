@@ -23,7 +23,7 @@ private:
     int height; // alto del tablero
 
     Estado* parent; // para reconstruir el camino
-    char movimiento[10]; // para reconstruir el camino, el movimiento que se hizo para llegar a este estado
+    //char movimiento[10]; // para reconstruir el camino, el movimiento que se hizo para llegar a este estado
 
     public:   
     Estado();

@@ -73,57 +73,36 @@ void Impresora::imprimirEstado(const Tablero& tablero, const Estado& estado) {
     delete[] matriz;
 }
 
-void Impresora::imprimirSolucion(const Tablero& tablero,
-                                  const Estado& estadoInicial,
-                                  const char* solucion) {
-    if (!solucion) {
+void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
+    int numPasos = 0;
+     if (!solucion) {
         std::cout << "Juego sin solución" << std::endl;
         return;
     }
-
-    std::cout << "Solución: " << solucion << std::endl;
-    std::cout << "\nEstado inicial:" << std::endl;
-    imprimirEstado(tablero, estadoInicial);
-
-    // parsear la solución y aplicar movimientos
-    // formato: R<id>,<celdas> o S<id>
-    Estado* estadoActual = new Estado(estadoInicial);
-    const char* ptr = solucion;
-
-    while (*ptr != '\0') {
-        char dir = *ptr++;
-        int id = (*ptr++) - '0';
-
-        if (dir == 'S') {
-            // sacar pieza
-            estadoActual->setPiezasSalidas(
-                estadoActual->getPiezasSalidas() | (1u << id)
-            );
-            std::cout << "Pieza " << id << " sale:" << std::endl;
-            imprimirEstado(tablero, *estadoActual);
-        } else {
-            // movimiento: saltar la coma
-            if (*ptr == ',') ptr++;
-            int celdas = atoi(ptr);
-            while (*ptr != '\0' && *ptr != 'R' && *ptr != 'L' 
-                   && *ptr != 'U' && *ptr != 'D' && *ptr != 'S')
-                ptr++;
-
-            // aplicar movimiento
-            for (int c = 0; c < celdas; c++) {
-                switch (dir) {
-                    case 'R': estadoActual->getPosPiezas()[id].x++; break;
-                    case 'L': estadoActual->getPosPiezas()[id].x--; break;
-                    case 'U': estadoActual->getPosPiezas()[id].y--; break;
-                    case 'D': estadoActual->getPosPiezas()[id].y++; break;
-                }
-            }
-            estadoActual->setStepUsed(estadoActual->getStepUsed() + celdas);
-
-            std::cout << "Movimiento " << dir << id << "," << celdas << ":" << std::endl;
-            imprimirEstado(tablero, *estadoActual);
-        }
+    
+    while (solucion[numPasos] != nullptr){ 
+        numPasos++;
     }
 
-    delete estadoActual;
+    if (numPasos == 0) {
+        std::cout << "Juego sin solución" << std::endl;
+        return;
+    }
+   
+
+    // imprimir string de solución
+    std::cout << "Solución: ";
+    for (int i = 1; i < numPasos; i++)  // i=0 es estado inicial sin movimiento
+        std::cout << solucion[i]->getMovimiento();
+    std::cout << std::endl;
+
+    // imprimir cada estado
+    for (int i = 0; i < numPasos; i++) {
+        if (i == 0)
+            std::cout << "Estado inicial:" << std::endl;
+        else
+            std::cout << "Paso " << i << " - " 
+                      << solucion[i]->getMovimiento() << ":" << std::endl;
+        imprimirEstado(tablero, *solucion[i]);
+    }
 }

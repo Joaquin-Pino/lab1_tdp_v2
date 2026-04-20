@@ -77,10 +77,7 @@ void Parser::parsearBloques() {
     Pieza temp[MAX_TEMP];
     numPiezas = 0;
 
-    // std::cout << "DEBUG parsearBloques inicio" << std::endl;
-
     while (leerLinea()) {
-        // std::cout << "DEBUG linea: '" << lineaActual << "'" << std::endl;
         if (lineaActual[0] == '[') {
             // guardar esta línea para que construirTablero la procese
             // reposicionar antes de la sección

@@ -12,7 +12,5 @@ public:
     static void imprimirEstado(const Tablero& tablero, const Estado& estado);
     
     // imprime la solución paso a paso
-    static void imprimirSolucion(const Tablero& tablero, 
-                                  const Estado& estadoInicial,
-                                  const char* solucion);
+    static void imprimirSolucion(const Tablero& tablero, Estado** solucion);
 };

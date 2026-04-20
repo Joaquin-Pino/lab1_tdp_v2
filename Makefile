@@ -12,7 +12,7 @@ PARSER    = parser
 SOLVER    = solver
 IMPRESORA = impresora
 
-all: testMinHeap testTablaHash testSolver
+all: testMinHeap testTablaHash testSolver main
 
 pieza.o: $(PIEZA)/pieza.cpp $(PIEZA)/pieza.h
 	$(CXX) $(CXXFLAGS) $(PIEZA)/pieza.cpp -o pieza.o
@@ -41,6 +41,12 @@ parser.o: $(PARSER)/parser.cpp $(PARSER)/parser.h
 solver.o: $(SOLVER)/solver.cpp $(SOLVER)/solver.h
 	$(CXX) $(CXXFLAGS) $(SOLVER)/solver.cpp -o solver.o
 
+impresora.o: $(IMPRESORA)/impresora.cpp $(IMPRESORA)/impresora.h
+	$(CXX) $(CXXFLAGS) $(IMPRESORA)/impresora.cpp -o impresora.o
+
+main.o: main.cpp
+	$(CXX) $(CXXFLAGS) main.cpp -o main.o
+
 testMinHeap.o: $(MINHEAP)/testMinHeap.cpp
 	$(CXX) $(CXXFLAGS) $(MINHEAP)/testMinHeap.cpp -o testMinHeap.o
 
@@ -50,14 +56,20 @@ testTablaHash.o: $(TABLAHASH)/testTablaHash.cpp
 testSolver.o: $(SOLVER)/testSolver.cpp
 	$(CXX) $(CXXFLAGS) $(SOLVER)/testSolver.cpp -o testSolver.o
 
+OBJS = pieza.o salida.o compuerta.o estado.o minheap.o tablaHash.o \
+       tablero.o parser.o solver.o impresora.o
+
 testMinHeap: pieza.o salida.o compuerta.o estado.o minheap.o testMinHeap.o
 	$(CXX) pieza.o salida.o compuerta.o estado.o minheap.o testMinHeap.o -o testMinHeap
 
 testTablaHash: pieza.o salida.o compuerta.o estado.o tablaHash.o testTablaHash.o
 	$(CXX) pieza.o salida.o compuerta.o estado.o tablaHash.o testTablaHash.o -o testTablaHash
 
-testSolver: pieza.o salida.o compuerta.o estado.o minheap.o tablaHash.o tablero.o parser.o solver.o testSolver.o
-	$(CXX) pieza.o salida.o compuerta.o estado.o minheap.o tablaHash.o tablero.o parser.o solver.o testSolver.o -o testSolver
+testSolver: $(OBJS) testSolver.o
+	$(CXX) $(OBJS) testSolver.o -o testSolver
+
+main: $(OBJS) main.o
+	$(CXX) $(OBJS) main.o -o main
 
 valgrind_minheap: testMinHeap
 	valgrind --leak-check=full --track-origins=yes ./testMinHeap
@@ -68,15 +80,8 @@ valgrind_tablahash: testTablaHash
 valgrind_solver: testSolver
 	valgrind --leak-check=full --track-origins=yes ./testSolver
 
-impresora.o: $(IMPRESORA)/impresora.cpp $(IMPRESORA)/impresora.h
-	$(CXX) $(CXXFLAGS) $(IMPRESORA)/impresora.cpp -o impresora.o
+valgrind_main: main
+	valgrind --leak-check=full --track-origins=yes ./main
 
-main.o: main.cpp
-	$(CXX) $(CXXFLAGS) main.cpp -o main.o
-
-main: pieza.o salida.o compuerta.o estado.o minheap.o tablaHash.o \
-      tablero.o parser.o solver.o impresora.o main.o
-	$(CXX) pieza.o salida.o compuerta.o estado.o minheap.o tablaHash.o \
-	       tablero.o parser.o solver.o impresora.o main.o -o main
 clean:
-	rm -f *.o testMinHeap testTablaHash testSolver
+	rm -f *.o testMinHeap testTablaHash testSolver main

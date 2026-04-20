@@ -18,9 +18,6 @@ void verificar(bool condicion, const char* nombreTest) {
     }
 }
 
-// ─────────────────────────────────────────
-// helpers
-// ─────────────────────────────────────────
 
 celda* crearMatriz5x5() {
     int w = 5, h = 5;
@@ -46,7 +43,6 @@ bool* geomSolida(int alto, int ancho) {
     return g;
 }
 
-// ─────────────────────────────────────────
 void testConstructorEImprimir() {
     std::cout << "\n-- Constructor e imprimir --" << std::endl;
 
@@ -116,24 +112,26 @@ void testPiezaPuedeMoverse() {
 
     celda* mat    = crearMatriz5x5();
     bool* g0      = geomSolida(1, 1);
-    Pieza* piezas = new Pieza[1];
-    piezas[0]     = Pieza(0, 1, 1, 1, {1, 1}, g0);
+    bool* g1      = geomSolida(1, 1);
+    Pieza* piezas = new Pieza[2];
+    piezas[0] = Pieza(0, 1, 1, 1, {1, 1}, g0);  // pieza 0 en (1,1)
+    piezas[1] = Pieza(1, 1, 1, 1, {1, 2}, g1);  // pieza 1 en (1,2) — justo abajo
 
     Salida* salidas = new Salida[1];
     salidas[0]      = Salida(0, 1, {4, 1}, false, 2, 2, 1);
     Compuerta* comp = new Compuerta[0];
 
-    Tablero t(mat, piezas, salidas, comp, 1, 1, 0, 5, 5, 50);
+    Tablero t(mat, piezas, salidas, comp, 2, 1, 0, 5, 5, 50);
     Estado* e = t.crearEstadoInicial();
 
     // pieza en (1,1): pared arriba en (0,1) y pared izquierda en (1,0)
-    verificar( t.piezaPuedeMoverse(0, DERECHA,    *e), "puede moverse derecha");
-    verificar( t.piezaPuedeMoverse(0, ABAJO,      *e), "puede moverse abajo");
-    verificar(!t.piezaPuedeMoverse(0, ARRIBA,     *e), "bloqueada por pared arriba");
-    verificar(!t.piezaPuedeMoverse(0, IZQUIERDA,  *e), "bloqueada por pared izquierda");
+    verificar( t.piezaPuedeMoverse(0, DERECHA,   *e), "puede moverse derecha");
+    verificar(!t.piezaPuedeMoverse(0, ABAJO,     *e), "puede moverse abajo");
+    verificar(!t.piezaPuedeMoverse(0, ARRIBA,    *e), "bloqueada por pared arriba");
+    verificar(!t.piezaPuedeMoverse(0, IZQUIERDA, *e), "bloqueada por pared izquierda");
 
     delete e;
-    // delete[] g0;
+    //delete[] g0;
 }
 
 // ─────────────────────────────────────────

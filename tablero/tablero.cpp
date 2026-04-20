@@ -98,9 +98,6 @@ int Tablero::getW() const { return w; }
 int Tablero::getH() const { return h; }
 int Tablero::getStepLimit() const { return stepLimit; }
 
-
-
-// TODO: optimizar
 bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
     Pieza& pieza = piezas[id];
     coordenada pos = estado.getPosPiezas()[id];
@@ -137,32 +134,14 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
                 if (!compuertas[c.id].aceptaBloque(pieza.getColor(), tamano, colorActual))
                     return false;
             }
+            
+            // verificamos en matriz de ocupacion del estado para ver si la celda está ocupada por otra pieza
+            int* ocupacion = estado.getOcupacion();
+            // si la celda a la que queremos movernos está ocupada por otra pieza (id diferente y no vacía)
+            if (ocupacion[fila * w + columna] != -1 && ocupacion[fila * w + columna] != id)
+                return false;
 
-            // verificar colisión con otras piezas desde el estado
-            // TODO: ver si esta comprobacion se puede hacer en log(n)
-            // vamos por todas las otras piezas y vemos si alguna ocupa la celda a la que queremos movernos
-            for (int otraId = 0; otraId < numPiezas; otraId++) {
-                if (otraId == id) continue;
-                if (estado.piezaYaSalio(otraId)) continue;
-
-                Pieza& otra = piezas[otraId]; // para mirar info estatica de la pieza
-                coordenada posOtra = estado.getPosPiezas()[otraId];
-                
-                // revisamos cada celda de la pieza otra para ver si alguna coincide con la celda a la que queremos movernos
-                for (int oi = 0; oi < otra.getAlto(); oi++) {
-                    for (int oj = 0; oj < otra.getAncho(); oj++) {
-                        // celda sin geometria
-                        if (!otra.getCelda(oj, oi)) continue;
-                        
-                        int filaOtra = posOtra.y + oi;
-                        int columnaOtra = posOtra.x + oj;
-
-                        // se estan topando en la celda a la que queremos movernos
-                        if (filaOtra == fila && columnaOtra == columna)
-                            return false;
-                    }
-                }
-            }
+            
         }
     }
     return true;
@@ -212,33 +191,14 @@ bool Tablero::piezaPuedeSalir(int id, const Estado& estado) {
     return false;
 }
 
-// bool Tablero::piezaPuedeSalir(int id, const Estado& estado) {
-//     Pieza& pieza = piezas[id];
-//     coordenada pos = estado.getPosPiezas()[id];
-
-//     // borde derecho
-//     for (int i = 0; i < pieza.getAlto(); i++) {
-//         if (!pieza.getCelda(pieza.getAncho()-1, i)) continue;
-//         int fila    = pos.y + i;
-//         int columna = pos.x + pieza.getAncho();
-//         std::cout << "DEBUG borde derecho fila=" << fila 
-//                   << " columna=" << columna 
-//                   << " tipo=" << matriz[fila * w + columna].tipo << std::endl;
-//         if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-//             if (esSalidaValida(fila, columna, pieza, estado)) return true;
-//     }
-//     return false;
-// }
 
 bool Tablero::esSalidaValida(int fila, int columna, 
                               const Pieza& pieza, const Estado& estado) {
     celda& c = matriz[fila * w + columna];
     Salida& salida = salidas[c.id];
     
-    //celda& c = matriz[fila * w + columna];
     if (c.tipo != SALIDA) return false;
 
-    //Salida& salida = salidas[c.id];
     // comprobamos color
     if (salida.getColor() != pieza.getColor()) return false;
 
@@ -278,19 +238,31 @@ int Tablero::calcularHeuristica(const Estado& estado) {
 
         coordenada pos = estado.getPosPiezas()[i];
 
-        // buscar la salida del color de esta pieza
-        int distMin = INT_MAX;
         for (int j = 0; j < numSalidas; j++) {
             if (salidas[j].getColor() != piezas[i].getColor()) continue;
+
             coordenada posSalida = salidas[j].getPos();
             int dist = (pos.x > posSalida.x ? pos.x - posSalida.x : posSalida.x - pos.x)
-                    + (pos.y > posSalida.y ? pos.y - posSalida.y : posSalida.y - pos.y);
-            if (dist < distMin) distMin = dist;
-        }
+                     + (pos.y > posSalida.y ? pos.y - posSalida.y : posSalida.y - pos.y);
 
-        if (distMin != INT_MAX) total += distMin;
+            // si la pieza ya está adyacente pero la salida no acepta
+            // agregar el número de pasos que faltan para que la salida abra
+            if (dist <= 1) {
+                int largoActual = estado.getLargoSalidas()[j];
+                int tamano = salidas[j].getEsHorizontal() ?
+                             piezas[i].getAncho() : piezas[i].getAlto();
+                if (!salidas[j].aceptaBloque(tamano, largoActual)) {
+                    // calcular cuántos pasos faltan para que la salida abra
+                    int paso = salidas[j].getPaso();
+                    if (paso > 0) total += paso;
+                    else total += 1;
+                }
+            }
+
+            total += dist;
+            break;
+        }
     }
-    
     return total;
 }
 
@@ -309,12 +281,32 @@ Estado* Tablero::crearEstadoInicial() const {
     for (int i = 0; i < numSalidas; i++)
         largosSalidas[i] = salidas[i].getLi();
 
+    // marcar ocupacion inicial del tablero según las piezas
+    int* ocupacion = new int[w * h];
+    for (int i = 0; i < w * h; i++) {
+        ocupacion[i] = -1;
+    } // -1 significa sin pieza
+
+    for (int id = 0; id < numPiezas; id++) {
+        Pieza& pieza = piezas[id];
+        coordenada pos = posiciones[id];
+        for (int i = 0; i < pieza.getAlto(); i++) {
+            for (int j = 0; j < pieza.getAncho(); j++) {
+                if (!pieza.getCelda(j, i)) continue;
+                int fila = pos.y + i;
+                int columna = pos.x + j;
+                ocupacion[fila * w + columna] = id;
+            }
+        }
+    }
+
     Estado* estado = new Estado(numPiezas, numCompuertas, numSalidas,
                                 posiciones, coloresCompuertas, largosSalidas,
-                                0, 0, 0, nullptr, "");
+                                0, 0, 0, w, h, nullptr, "", ocupacion);
     delete[] posiciones;
     delete[] coloresCompuertas;
     delete[] largosSalidas;
+    delete[] ocupacion;
 
     return estado;
 }

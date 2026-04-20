@@ -25,16 +25,10 @@ int Solver::generarVecinos(Estado* actual) {
 
     direccion dirs[] = {ARRIBA, ABAJO, IZQUIERDA, DERECHA};
     const char* dirStr[] = {"U", "D", "L", "R"};
-    //std::cout << "stepLimit=" << tablero->getStepLimit() << std::endl;
     // aplicamos esto para cada pieza 
     for (int id = 0; id < numPiezas; id++) {
         if (actual->piezaYaSalio(id)) continue;
-        // std::cout << "DEBUG piezaPuedeSalir id=" << id
-        //   << " pos=(" << actual->getPosPiezas()[id].x
-        //   << "," << actual->getPosPiezas()[id].y << ")" << std::endl;
 
-        //   bool puedeSalir = tablero->piezaPuedeSalir(id, *actual);
-// std::cout << "DEBUG resultado piezaPuedeSalir=" << puedeSalir << std::endl;
         // verificar si puede salir antes de mover
         if (tablero->piezaPuedeSalir(id, *actual)) {
             Estado* vecino = new Estado(*actual);
@@ -52,10 +46,9 @@ int Solver::generarVecinos(Estado* actual) {
             vecino->setParent(actual);
 
             // movimiento formato: "S<id>"
+            int idReal = tablero->getPiezas()[id].getId();
             char mov[10];
-            mov[0] = 'S';
-            mov[1] = '0' + id;
-            mov[2] = '\0';
+            snprintf(mov, 10, "S%d", idReal);
             vecino->setMovimiento(mov);
 
             vecinosTemp[count++] = vecino;
@@ -64,11 +57,6 @@ int Solver::generarVecinos(Estado* actual) {
 
         // intentar mover en cada dirección
         for (int d = 0; d < 4; d++) {
-            // en generarVecinos, antes del if de piezaPuedeMoverse
-            // std::cout << "DEBUG intentando mover pieza " << id 
-            //             << " dir=" << dirs[d] 
-            //             << " pos=(" << actual->getPosPiezas()[id].x 
-            //             << "," << actual->getPosPiezas()[id].y << ")" << std::endl;
 
             if (!tablero->piezaPuedeMoverse(id, dirs[d], *actual)) continue;
 
@@ -105,9 +93,6 @@ int Solver::generarVecinos(Estado* actual) {
             // movimiento formato: "R<id>,1"
             int idReal = tablero->getPiezas()[id].getId();
             char mov[10];
-            mov[0] = 'S';
-            mov[1] = '0' + idReal;
-            mov[2] = '\0';
             // formato: R<idReal>,1
             snprintf(mov, 10, "%c%d,1", dirStr[d][0], idReal);
             vecino->setMovimiento(mov);
@@ -118,36 +103,28 @@ int Solver::generarVecinos(Estado* actual) {
     return count;
 }
 
-char* Solver::reconstruirCamino(Estado* final) {
+Estado** Solver::reconstruirCamino(Estado* final) {
     // contar pasos
-    int pasos = 0;
+    int numPasos = 0;
     Estado* actual = final;
-    while (actual->getParent() != nullptr) {
-        pasos++;
+    while (actual != nullptr) {
+        numPasos++;
         actual = actual->getParent();
     }
 
-    // alojar string resultado
-    // cada movimiento ocupa máximo 10 chars
-    char* resultado = new char[pasos * 10 + 1];
-    resultado[0] = '\0';
+    Estado** camino = new Estado*[numPasos + 1];
 
-    // reconstruir en orden inverso usando arreglo temporal
-    const char** movimientos = new const char*[pasos];
     actual = final;
-    for (int i = pasos - 1; i >= 0; i--) {
-        movimientos[i] = actual->getMovimiento();
+    for (int i = numPasos - 1; i >= 0; i--) {
+        camino[i] = actual;
         actual = actual->getParent();
     }
-
-    for (int i = 0; i < pasos; i++)
-        strcat(resultado, movimientos[i]);
-
-    delete[] movimientos;
-    return resultado;
+    
+    camino[numPasos] = nullptr;  // marcar fin del camino
+    return camino;
 }
 
-char* Solver::resolver(Estado* estadoInicial) {
+Estado** Solver::resolver(Estado* estadoInicial) {
     // calcular heuristica inicial
     int h = tablero->calcularHeuristica(*estadoInicial);
     estadoInicial->setH(h);
@@ -167,7 +144,7 @@ char* Solver::resolver(Estado* estadoInicial) {
 
         // verificar si es solución
         if (actual->jugoTerminado(tablero->getNumPiezas())) {
-            char* solucion = reconstruirCamino(actual);
+            Estado** solucion = reconstruirCamino(actual);
             // limpiar estados en openSet
             // los estados del camino se mantienen vía punteros padre
             return solucion;

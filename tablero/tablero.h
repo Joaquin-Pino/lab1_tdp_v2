@@ -13,8 +13,8 @@ enum tipoCelda {
 };
 
 struct celda {
-    int tipo;       // VACIA, PARED, COMPUERTA, PIEZA, SALIDA
-    int id;         // id de la pieza, salida o compuerta. -1 si no aplica
+    int tipo; // VACIA, PARED, COMPUERTA, PIEZA, SALIDA
+    int id; // id de la pieza, salida o compuerta. -1 si no aplica
 };
 
 enum direccion{

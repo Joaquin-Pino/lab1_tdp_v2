@@ -1,6 +1,7 @@
 // solver/testSolver.cpp
 #include "solver.h"
 #include "../parser/parser.h"
+#include "../impresora/impresora.h"
 #include <iostream>
 #include <cstring>
 
@@ -23,7 +24,6 @@ void testSimple1() {
 
     Parser parser("simple1.cfg");
     Tablero* tablero = parser.construirTablero();
-
     verificar(tablero != nullptr, "tablero cargado correctamente");
     if (!tablero) return;
 
@@ -32,24 +32,23 @@ void testSimple1() {
 
     std::cout << "Tablero:" << std::endl;
     tablero->imprimir();
-    
+
     Solver solver(tablero);
-    char* solucion = solver.resolver(estadoInicial);
+    Estado** solucion = solver.resolver(estadoInicial);
+    // no liberar estadoInicial — el Solver es dueño
 
     verificar(solucion != nullptr, "solución encontrada");
+
     if (solucion) {
-        std::cout << "Solución: " << solucion << std::endl;
-        // el enunciado dice que la solución es R1,1
-        verificar(strcmp(solucion, "R1,1") == 0, "solución correcta: R1,1");
-        delete[] solucion;
-    } else{
+        Impresora::imprimirSolucion(*tablero, solucion);
+        delete[] solucion;  // solo el arreglo de punteros, no los estados
+    } else {
         std::cout << "No se encontró solución" << std::endl;
     }
 
-    delete estadoInicial;
     delete tablero;
+    // estadoInicial lo libera el Solver en su destructor
 }
-
 // ─────────────────────────────────────────
 void testSinSolucion() {
     std::cout << "\n-- sin solución --" << std::endl;
@@ -66,11 +65,11 @@ void testSinSolucion() {
 
     Estado* estadoInicial = tablero->crearEstadoInicial();
     Solver solver(tablero);
-    char* solucion = solver.resolver(estadoInicial);
+    Estado** solucion = solver.resolver(estadoInicial);
 
     verificar(solucion == nullptr, "retorna nullptr cuando no hay solución");
 
-    delete estadoInicial;
+    // delete estadoInicial;
     delete tablero;
 }
 
@@ -89,7 +88,7 @@ void testEstadoInicial() {
     verificar(e->getPosPiezas()[0].x == 4,  "pieza en x=4");
     verificar(e->getPosPiezas()[0].y == 4,  "pieza en y=4");
 
-    delete e;
+    // delete e;
     delete tablero;
 }
 

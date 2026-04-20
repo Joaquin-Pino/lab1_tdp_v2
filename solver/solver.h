@@ -14,7 +14,7 @@ private:
     int maxVecinos;
 
     int generarVecinos(Estado* actual);
-    char* reconstruirCamino(Estado* final);
+    Estado** reconstruirCamino(Estado* final);
 
 public:
     Solver(Tablero* t);
@@ -22,5 +22,5 @@ public:
     Solver& operator=(const Solver&) = delete;
     ~Solver();
 
-    char* resolver(Estado* estadoInicial);
+    Estado** resolver(Estado* estadoInicial);
 };
