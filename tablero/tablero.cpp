@@ -297,3 +297,11 @@ void Tablero::imprimir() const {
         std::cout << "\n";
     }
 }
+
+bool Tablero::piezaPodriaSalir(Pieza& pieza, Salida& salida) const {
+    // esta función se encarga de verificar si una pieza podría salir por una salida dada su posición actual
+    // se asume que la pieza ya está adyacente a la salida y que el color coincide (verificado antes)
+    int tamanoPieza= salida.getEsHorizontal() ? pieza.getAncho() : pieza.getAlto();
+    int largoEventual = abs(salida.getLi() - salida.getLf());
+    return tamanoPieza <= largoEventual;
+}

@@ -64,5 +64,7 @@ public:
     int calcularLargoSalida(int idSalida, const Estado& estado) const;
     Estado* crearEstadoInicial() const;
 
+    bool piezaPodriaSalir(Pieza& pieza, Salida& salida) const;
+    
     void imprimir() const;
 };

@@ -147,11 +147,18 @@ int Solver::calcularHeuristica(const Estado& estado) const {
     int total = 0;
     for (int i = 0; i < tablero->getNumPiezas(); i++) {
         if (estado.piezaYaSalio(i)) continue;
+        
         coordenada pos = estado.getPosPiezas()[i];
         for (int j = 0; j < tablero->getNumSalidas(); j++) {
-            if (tablero->getSalidas()[j].getColor() != 
-                tablero->getPiezas()[i].getColor()) continue;
+
+            // calculamos la distancia Manhattan a la salida de su mismo color
+            if (tablero->getSalidas()[j].getColor() != tablero->getPiezas()[i].getColor() && 
+                !tablero->piezaPodriaSalir(tablero->getPiezas()[i], tablero->getSalidas()[j])) {
+                continue;
+            }
+            
             coordenada posSalida = tablero->getSalidas()[j].getPos();
+            // caclulamos la distancia Manhattan entre pieza y su salida
             total += abs(pos.x - posSalida.x) + abs(pos.y - posSalida.y);
             break;
         }

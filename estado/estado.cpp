@@ -38,7 +38,7 @@ Estado::Estado(int numPiezas, int numCompuertas, int numSalidas,
 
 Estado::Estado(const Estado& otro) : numPiezas(otro.numPiezas), numCompuertas(otro.numCompuertas), 
         numSalidas(otro.numSalidas), piezasSalidas(otro.piezasSalidas), stepUsed(otro.stepUsed), 
-        f(otro.f), h(otro.h), height(otro.height), width(otro.width), parent(otro.parent) {
+        f(otro.f), h(otro.h), width(otro.width), height(otro.height), parent(otro.parent) {
     // Copiar los arreglos, sin usar std::copy
 
     posPiezas = new coordenada[numPiezas];

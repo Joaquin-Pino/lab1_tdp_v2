@@ -25,8 +25,8 @@ int main() {
 
     while (opcion != 5) {
         menuPrincipal();
-        std::cin >> opcion;
-
+        std::cin >> opcion; // TODO: validar input, si se ingresa string se rompe
+        
         switch (opcion) {
             case 1: {
                 std::cout << "Ingrese el nombre del archivo: ";
