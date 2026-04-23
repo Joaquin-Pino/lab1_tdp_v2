@@ -118,7 +118,7 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
             }
 
             // verificar limites del tablero
-            if (fila <= 0 || fila >= h || columna <= 0 || columna >= w)
+            if (fila < 0 || fila >= h || columna < 0 || columna >= w)
                 return false;
             
             // verificamos en matriz de ocupacion del estado para ver si la celda está ocupada por otra pieza

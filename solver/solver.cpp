@@ -144,24 +144,83 @@ Estado** Solver::resolver(Estado* estadoInicial) {
     return nullptr;
 }
 int Solver::calcularHeuristica(const Estado& estado) const {
-    int total = 0;
+    int maxDist = 0;
+
     for (int i = 0; i < tablero->getNumPiezas(); i++) {
         if (estado.piezaYaSalio(i)) continue;
-        
-        coordenada pos = estado.getPosPiezas()[i];
-        for (int j = 0; j < tablero->getNumSalidas(); j++) {
 
-            // calculamos la distancia Manhattan a la salida de su mismo color
-            if (tablero->getSalidas()[j].getColor() != tablero->getPiezas()[i].getColor() && 
-                !tablero->piezaPodriaSalir(tablero->getPiezas()[i], tablero->getSalidas()[j])) {
-                continue;
-            }
-            
-            coordenada posSalida = tablero->getSalidas()[j].getPos();
-            // caclulamos la distancia Manhattan entre pieza y su salida
-            total += abs(pos.x - posSalida.x) + abs(pos.y - posSalida.y);
-            break;
+        coordenada pos = estado.getPosPiezas()[i];
+        Pieza& pieza   = tablero->getPiezas()[i];
+        int mejorDist  = -1;
+
+        for (int j = 0; j < tablero->getNumSalidas(); j++) {
+            Salida& salida = tablero->getSalidas()[j];
+            if (salida.getColor() != pieza.getColor()) continue;
+            if (!tablero->piezaPodriaSalir(pieza, salida)) continue;
+
+            int dist = abs(pos.x - salida.getPos().x) 
+                     + abs(pos.y - salida.getPos().y);
+            if (mejorDist == -1 || dist < mejorDist)
+                mejorDist = dist;
+        }
+
+        if (mejorDist == -1){
+            mejorDist = tablero->getW() + tablero->getH();
+        }
+
+        int distConBloqueos = mejorDist + contarBloqueos(i, pos, estado);
+        if (distConBloqueos > maxDist) {
+            maxDist = distConBloqueos;
         }
     }
-    return total;
+    return maxDist;
+}
+
+int Solver::contarBloqueos(int idPieza, coordenada pos, 
+                             const Estado& estado) const {
+    Pieza& pieza   = tablero->getPiezas()[idPieza];
+    coordenada posSalida = {0, 0};
+
+    // encontrar la salida más cercana (la misma que usó calcularHeuristica)
+    int mejorDist = -1;
+    for (int j = 0; j < tablero->getNumSalidas(); j++) {
+        Salida& salida = tablero->getSalidas()[j];
+        if (salida.getColor() != pieza.getColor()) continue;
+        if (!tablero->piezaPodriaSalir(pieza, salida)) continue;
+        int d = abs(pos.x - salida.getPos().x) + abs(pos.y - salida.getPos().y);
+        
+        if (mejorDist == -1 || d < mejorDist) {
+            mejorDist = d;
+            posSalida = salida.getPos();
+        }
+    }
+    if (mejorDist <= 0) return 0;
+
+    int bloqueos = 0;
+    short* ocupacion = estado.getOcupacion();
+    int w = tablero->getW();
+
+    // barrer las celdas en línea recta entre pieza y salida
+    // movimiento horizontal
+    if (pos.y == posSalida.y) {
+        int xMin = (pos.x < posSalida.x) ? pos.x + 1 : posSalida.x;
+        int xMax = (pos.x < posSalida.x) ? posSalida.x : pos.x - 1;
+        for (int x = xMin; x <= xMax; x++) {
+            short ocupante = ocupacion[pos.y * w + x];
+            if (ocupante != -1 && ocupante != idPieza)
+                bloqueos++;
+        }
+    }
+    // movimiento vertical
+    else if (pos.x == posSalida.x) {
+        int yMin = (pos.y < posSalida.y) ? pos.y + 1 : posSalida.y;
+        int yMax = (pos.y < posSalida.y) ? posSalida.y : pos.y - 1;
+        for (int y = yMin; y <= yMax; y++) {
+            short ocupante = ocupacion[y * w + pos.x];
+            if (ocupante != -1 && ocupante != idPieza)
+                bloqueos++;
+        }
+    }
+
+    return bloqueos;
 }

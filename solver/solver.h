@@ -16,7 +16,7 @@ private:
     int generarVecinos(Estado* actual);
     Estado** reconstruirCamino(Estado* final);
     int calcularHeuristica(const Estado& estado) const;
-
+    int contarBloqueos(int idPieza, coordenada pos, const Estado& estado) const;
 public:
     Solver(Tablero* t);
     Solver(const Solver&) = delete;

@@ -74,8 +74,10 @@ void TablaHash::liberarEstados() {
     for (int i = 0; i < capacidad; i++) {
         Nodo* actual = tabla[i];
         while (actual) {
-            delete actual->estado;
-            actual = actual->siguiente;
+            Nodo* siguiente = actual->siguiente;  // guardar ANTES de borrar
+            delete actual->estado;                // libera Estado*
+            delete actual;                        // libera Nodo*
+            actual = siguiente;
         }
     }
 }
