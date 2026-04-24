@@ -79,5 +79,7 @@ void TablaHash::liberarEstados() {
             delete actual;                        // libera Nodo*
             actual = siguiente;
         }
+        tabla[i] = nullptr;
     }
+    tamano = 0;
 }

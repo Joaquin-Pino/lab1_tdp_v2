@@ -35,7 +35,10 @@ int main() {
                 // limpiar estado anterior
                 delete tablero;
                 delete estadoInicial;
-                delete[] solucion;
+                if (solucion) {
+                    for (int i = 0; solucion[i] != nullptr; i++) delete solucion[i];
+                    delete[] solucion;
+                }
                 tablero       = nullptr;
                 estadoInicial = nullptr;
                 solucion      = nullptr;
@@ -60,7 +63,10 @@ int main() {
                     break;
                 }
 
-                delete[] solucion;
+                if (solucion) {
+                    for (int i = 0; solucion[i] != nullptr; i++) delete solucion[i];
+                    delete[] solucion;
+                }
                 solucion = nullptr;
 
                 std::cout << "Resolviendo..." << std::endl;
@@ -122,7 +128,10 @@ int main() {
 
     delete tablero;
     delete estadoInicial;
-    delete[] solucion;
+    if (solucion) {
+        for (int i = 0; solucion[i] != nullptr; i++) delete solucion[i];
+        delete[] solucion;
+    }
 
     return 0;
 }

@@ -168,12 +168,10 @@ int Solver::generarVecinos(Estado* actual) {
 }
 
 Estado** Solver::reconstruirCamino(Estado* final) {
-    // contar pasos
     int numPasos = 0;
     Estado* actual = final;
     while (actual != nullptr) {
         numPasos++;
-        int calcularHeuristica(const Estado& estado);
         actual = actual->getParent();
     }
 
@@ -181,11 +179,12 @@ Estado** Solver::reconstruirCamino(Estado* final) {
 
     actual = final;
     for (int i = numPasos - 1; i >= 0; i--) {
-        camino[i] = actual;
+        camino[i] = new Estado(*actual);
+        camino[i]->setParent(nullptr);
         actual = actual->getParent();
     }
-    
-    camino[numPasos] = nullptr;  // marcar fin del camino
+
+    camino[numPasos] = nullptr;
     return camino;
 }
 
@@ -205,7 +204,9 @@ Estado** Solver::resolver(Estado* estadoInicial) {
         }
 
         if (actual->jugoTerminado(tablero->getNumPiezas())) {
-            return reconstruirCamino(actual);
+            Estado** camino = reconstruirCamino(actual);
+            delete actual;
+            return camino;
         }
 
         if (actual->getStepUsed() >= tablero->getStepLimit()) {

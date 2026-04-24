@@ -154,42 +154,116 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
 bool Tablero::piezaPuedeSalir(int id, const Estado& estado) {
     Pieza& pieza = piezas[id];
     coordenada pos = estado.getPosPiezas()[id];
+    int pw = pieza.getAncho();
+    int ph = pieza.getAlto();
 
-    // solo verificar celdas que están realmente en el borde de la pieza
-    // borde superior: solo fila 0 de la pieza
-    for (int j = 0; j < pieza.getAncho(); j++) {
-        if (!pieza.getCelda(j, 0)) continue;
-        int fila    = pos.y - 1;
-        int columna = pos.x + j;
-        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-            if (esSalidaValida(fila, columna, pieza, estado)) return true;
+    // --- borde superior: todas las celdas de geometria en fila 0 deben mirar
+    //     a la MISMA salida, y el ancho de la pieza debe caber en su largo ---
+    {
+        int idSalida = -1;
+        bool valido = true;
+        bool algunaCelda = false;
+        for (int j = 0; j < pw && valido; j++) {
+            if (!pieza.getCelda(j, 0)) continue;
+            algunaCelda = true;
+            int fila    = pos.y - 1;
+            int columna = pos.x + j;
+            if (fila < 0 || fila >= h || columna < 0 || columna >= w) {
+                valido = false; break;
+            }
+            celda& c = matriz[fila * w + columna];
+            if (c.tipo != SALIDA) { valido = false; break; }
+            if (idSalida == -1) idSalida = c.id;
+            else if (c.id != idSalida) { valido = false; break; }
+        }
+        if (valido && algunaCelda && idSalida != -1) {
+            Salida& s = salidas[idSalida];
+            if (s.getColor() == pieza.getColor() && s.getEsHorizontal()) {
+                int largoActual = calcularLargoSalida(idSalida, estado);
+                if (pw <= largoActual) return true;
+            }
+        }
     }
 
-    // borde inferior: solo última fila de la pieza
-    for (int j = 0; j < pieza.getAncho(); j++) {
-        if (!pieza.getCelda(j, pieza.getAlto()-1)) continue;
-        int fila    = pos.y + pieza.getAlto();
-        int columna = pos.x + j;
-        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-            if (esSalidaValida(fila, columna, pieza, estado)) return true;
+    // --- borde inferior ---
+    {
+        int idSalida = -1;
+        bool valido = true;
+        bool algunaCelda = false;
+        for (int j = 0; j < pw && valido; j++) {
+            if (!pieza.getCelda(j, ph - 1)) continue;
+            algunaCelda = true;
+            int fila    = pos.y + ph;
+            int columna = pos.x + j;
+            if (fila < 0 || fila >= h || columna < 0 || columna >= w) {
+                valido = false; break;
+            }
+            celda& c = matriz[fila * w + columna];
+            if (c.tipo != SALIDA) { valido = false; break; }
+            if (idSalida == -1) idSalida = c.id;
+            else if (c.id != idSalida) { valido = false; break; }
+        }
+        if (valido && algunaCelda && idSalida != -1) {
+            Salida& s = salidas[idSalida];
+            if (s.getColor() == pieza.getColor() && s.getEsHorizontal()) {
+                int largoActual = calcularLargoSalida(idSalida, estado);
+                if (pw <= largoActual) return true;
+            }
+        }
     }
 
-    // borde izquierdo: solo columna 0 de la pieza
-    for (int i = 0; i < pieza.getAlto(); i++) {
-        if (!pieza.getCelda(0, i)) continue;
-        int fila    = pos.y + i;
-        int columna = pos.x - 1;
-        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-            if (esSalidaValida(fila, columna, pieza, estado)) return true;
+    // --- borde izquierdo ---
+    {
+        int idSalida = -1;
+        bool valido = true;
+        bool algunaCelda = false;
+        for (int i = 0; i < ph && valido; i++) {
+            if (!pieza.getCelda(0, i)) continue;
+            algunaCelda = true;
+            int fila    = pos.y + i;
+            int columna = pos.x - 1;
+            if (fila < 0 || fila >= h || columna < 0 || columna >= w) {
+                valido = false; break;
+            }
+            celda& c = matriz[fila * w + columna];
+            if (c.tipo != SALIDA) { valido = false; break; }
+            if (idSalida == -1) idSalida = c.id;
+            else if (c.id != idSalida) { valido = false; break; }
+        }
+        if (valido && algunaCelda && idSalida != -1) {
+            Salida& s = salidas[idSalida];
+            if (s.getColor() == pieza.getColor() && !s.getEsHorizontal()) {
+                int largoActual = calcularLargoSalida(idSalida, estado);
+                if (ph <= largoActual) return true;
+            }
+        }
     }
 
-    // borde derecho: solo última columna de la pieza
-    for (int i = 0; i < pieza.getAlto(); i++) {
-        if (!pieza.getCelda(pieza.getAncho()-1, i)) continue;
-        int fila    = pos.y + i;
-        int columna = pos.x + pieza.getAncho();
-        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-            if (esSalidaValida(fila, columna, pieza, estado)) return true;
+    // --- borde derecho ---
+    {
+        int idSalida = -1;
+        bool valido = true;
+        bool algunaCelda = false;
+        for (int i = 0; i < ph && valido; i++) {
+            if (!pieza.getCelda(pw - 1, i)) continue;
+            algunaCelda = true;
+            int fila    = pos.y + i;
+            int columna = pos.x + pw;
+            if (fila < 0 || fila >= h || columna < 0 || columna >= w) {
+                valido = false; break;
+            }
+            celda& c = matriz[fila * w + columna];
+            if (c.tipo != SALIDA) { valido = false; break; }
+            if (idSalida == -1) idSalida = c.id;
+            else if (c.id != idSalida) { valido = false; break; }
+        }
+        if (valido && algunaCelda && idSalida != -1) {
+            Salida& s = salidas[idSalida];
+            if (s.getColor() == pieza.getColor() && !s.getEsHorizontal()) {
+                int largoActual = calcularLargoSalida(idSalida, estado);
+                if (ph <= largoActual) return true;
+            }
+        }
     }
 
     return false;
