@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -c -g -Wall -Wextra
+CXXFLAGS = -c -O2 -Wall -Wextra
 
 PIEZA     = pieza
 SALIDA    = salida

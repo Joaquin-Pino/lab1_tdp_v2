@@ -209,7 +209,7 @@ Estado** Solver::resolver(Estado* estadoInicial) {
             return camino;
         }
 
-        if (actual->getStepUsed() >= tablero->getStepLimit()) {
+        if (actual->getStepUsed() > tablero->getStepLimit()) {
             delete actual;
             continue;
         }
@@ -232,7 +232,7 @@ int Solver::calcularHeuristica(const Estado& estado) const {
     short* ocupacion = estado.getOcupacion();
 
     for (int i = 0; i < tablero->getNumPiezas(); i++) {
-        if (estado.piezaYaSalio(i)) continue;
+        if (estado.piezaYaSalio(i)) continue; // calculo O(1)
 
         coordenada pos = estado.getPosPiezas()[i];
         Pieza& pieza   = tablero->getPiezas()[i];
@@ -248,8 +248,9 @@ int Solver::calcularHeuristica(const Estado& estado) const {
                      + abs(pos.y - salida.getPos().y);
 
             int bloqueos = contarBloqueos(i, pos, salida.getPos(), estado);
-
+            
             int costo = dist + bloqueos;
+            //int costo = dist;
             if (mejorCosto == -1 || costo < mejorCosto)
                 mejorCosto = costo;
         }

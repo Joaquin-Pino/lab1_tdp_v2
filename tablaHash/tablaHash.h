@@ -15,7 +15,9 @@ private:
     int tamano;
 
     unsigned int calcularHash(const Estado* e) const;
+    unsigned int calcularHashConCapacidad(const Estado* e, int cap) const;
     bool sonIguales(const Estado* a, const Estado* b) const;
+    void rehash();
 
 public:
     TablaHash(int capacidad);
