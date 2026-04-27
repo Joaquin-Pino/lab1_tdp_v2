@@ -69,4 +69,6 @@ private:
     void sacarPieza(int id, const Pieza& pieza, int w);
     void actualizarCompuerta(int idx, int color);
     void actualizarSalida(int idx, short largo);
+
+    void eliminarOcupacion();
 };

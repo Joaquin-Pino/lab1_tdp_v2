@@ -205,6 +205,8 @@ Estado** Solver::resolver(Estado* estadoInicial) {
 
         if (actual->jugoTerminado(tablero->getNumPiezas())) {
             Estado** camino = reconstruirCamino(actual);
+            std::cout << "openSet tamaño al final: " << openSet->getTamano() << std::endl;
+            std::cout << "closedSet tamaño al final: " << closedSet->getTamano() << std::endl;
             delete actual;
             return camino;
         }
@@ -213,16 +215,23 @@ Estado** Solver::resolver(Estado* estadoInicial) {
             delete actual;
             continue;
         }
-
+         // liberar memoria de ocupacion antes de guardar en closedSet
         closedSet->insertar(actual);
-
-        int numVecinos = generarVecinos(actual);
+        int numVecinos = generarVecinos(actual);  // primero generar vecinos
+         
         for (int i = 0; i < numVecinos; i++) {
+            if (vecinosTemp[i]->getF() > tablero->getStepLimit()) {
+                delete vecinosTemp[i];
+                continue;
+            }
+            
             if (!closedSet->existe(vecinosTemp[i]))
                 openSet->push(vecinosTemp[i]);
             else
                 delete vecinosTemp[i];
         }
+
+        actual->eliminarOcupacion(); 
     }
     return nullptr;
 }
@@ -285,8 +294,7 @@ int Solver::contarBloqueos(int idPieza, coordenada pos,
     return contarBloqueos(idPieza, pos, mejorSalida, estado);
 }
 
-int Solver::contarBloqueos(int idPieza, coordenada pos, coordenada posSalida,
-                             const Estado& estado) const {
+int Solver::contarBloqueos(int idPieza, coordenada pos, coordenada posSalida, const Estado& estado) const {
     int w = tablero->getW();
     short* ocupacion = estado.getOcupacion();
     celda* matriz = tablero->getMatriz();

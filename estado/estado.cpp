@@ -58,9 +58,12 @@ Estado::Estado(const Estado& otro) : numPiezas(otro.numPiezas), numCompuertas(ot
     strncpy(movimiento, otro.movimiento, 10);
     this->movimiento[9] = '\0'; // asegurar terminacion
 
+    if (otro.ocupacion) {
     ocupacion = new short[width * height];
-    for (int i = 0; i < width * height; i++) {
-        this->ocupacion[i] = otro.ocupacion[i];
+    for (int i = 0; i < width * height; i++)
+        ocupacion[i] = otro.ocupacion[i];
+    } else {
+        ocupacion = nullptr;
     }
 }
 
@@ -102,9 +105,12 @@ Estado& Estado::operator=(const Estado& otro) {
     strncpy(movimiento, otro.movimiento, 10);
     this->movimiento[9] = '\0'; // asegurar terminacion
 
+    if (otro.ocupacion) {
     ocupacion = new short[width * height];
-    for (int i = 0; i < width * height; i++) {
-        this->ocupacion[i] = otro.ocupacion[i];
+    for (int i = 0; i < width * height; i++)
+        ocupacion[i] = otro.ocupacion[i];
+    } else {
+        ocupacion = nullptr;
     }
 
     return *this;
@@ -114,7 +120,10 @@ Estado::~Estado() {
     delete[] posPiezas;
     delete[] colorCompuertas;
     delete[] largoSalidas;
-    delete[] ocupacion;
+    if (ocupacion){
+        delete[] ocupacion;
+    }
+    
 }
 
 bool Estado::piezaYaSalio(int idPieza) const {
@@ -256,4 +265,9 @@ void Estado::actualizarCompuerta(int idx, int color) {
 
 void Estado::actualizarSalida(int idx, short largo) {
     largoSalidas[idx] = largo;
+}
+
+void Estado::eliminarOcupacion() {
+    delete[] ocupacion;
+    ocupacion = nullptr;
 }
