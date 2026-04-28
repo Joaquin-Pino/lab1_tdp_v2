@@ -1,5 +1,7 @@
 #include "impresora.h"
 #include <iostream>
+#include <cstring>
+#include <cstdlib>
 
 void Impresora::imprimirTablero(const Tablero& Tablero){
     Tablero.imprimir();
@@ -90,10 +92,49 @@ void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
     }
    
 
-    // imprimir string de solución
+    // imprimir string de solución (consolidando movimientos consecutivos
+    // de la misma pieza en la misma direccion)
     std::cout << "Solución: ";
-    for (int i = 1; i < numPasos; i++)  // i=0 es estado inicial sin movimiento
-        std::cout << solucion[i]->getMovimiento();
+    char dirAcum = 0;
+    int piezaAcum = -1;
+    int countAcum = 0;
+    for (int i = 1; i < numPasos; i++) {
+        const char* mov = solucion[i]->getMovimiento();
+        if (mov[0] == 'S') {
+            if (countAcum > 0) {
+                std::cout << dirAcum << piezaAcum << "," << countAcum;
+                countAcum = 0;
+                dirAcum = 0;
+                piezaAcum = -1;
+            }
+        
+            continue;
+        }
+        char dir = mov[0];
+        int pieza = -1;
+        int dist = 1;
+        const char* coma = strchr(mov, ',');
+        if (coma) {
+            pieza = atoi(mov + 1);
+            dist = atoi(coma + 1);
+        } else {
+            pieza = atoi(mov + 1);
+        }
+
+        if (dir == dirAcum && pieza == piezaAcum) {
+            countAcum += dist;
+        } else {
+            if (countAcum > 0) {
+                std::cout << dirAcum << piezaAcum << "," << countAcum;
+            }
+            dirAcum = dir;
+            piezaAcum = pieza;
+            countAcum = dist;
+        }
+    }
+    if (countAcum > 0) {
+        std::cout << dirAcum << piezaAcum << "," << countAcum;
+    }
     std::cout << std::endl;
 
     // imprimir cada estado
