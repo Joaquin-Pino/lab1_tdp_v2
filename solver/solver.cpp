@@ -205,46 +205,42 @@ Estado** Solver::resolver(Estado* estadoInicial) {
 
         if (actual->jugoTerminado(tablero->getNumPiezas())) {
             Estado** camino = reconstruirCamino(actual);
-            std::cout << "openSet tamaño al final: " << openSet->getTamano() << std::endl;
-            std::cout << "closedSet tamaño al final: " << closedSet->getTamano() << std::endl;
             delete actual;
             return camino;
         }
 
-        if (actual->getStepUsed() > tablero->getStepLimit()) {
+        if (actual->getStepUsed() >= tablero->getStepLimit()) {
             delete actual;
             continue;
         }
-         // liberar memoria de ocupacion antes de guardar en closedSet
+
         closedSet->insertar(actual);
-        int numVecinos = generarVecinos(actual);  // primero generar vecinos
-         
+
+        int numVecinos = generarVecinos(actual);
         for (int i = 0; i < numVecinos; i++) {
-            if (vecinosTemp[i]->getF() > tablero->getStepLimit()) {
+            if (vecinosTemp[i]->getStepUsed() > tablero->getStepLimit()) {
                 delete vecinosTemp[i];
                 continue;
             }
-            
             if (!closedSet->existe(vecinosTemp[i]))
                 openSet->push(vecinosTemp[i]);
             else
                 delete vecinosTemp[i];
         }
-
-        actual->eliminarOcupacion(); 
+        actual->eliminarOcupacion();
     }
     return nullptr;
 }
 int Solver::calcularHeuristica(const Estado& estado) const {
     int total = 0;
-    int w = tablero->getW();
-    short* ocupacion = estado.getOcupacion();
 
     for (int i = 0; i < tablero->getNumPiezas(); i++) {
-        if (estado.piezaYaSalio(i)) continue; // calculo O(1)
+        if (estado.piezaYaSalio(i)) continue;
 
         coordenada pos = estado.getPosPiezas()[i];
         Pieza& pieza   = tablero->getPiezas()[i];
+        int pw = pieza.getAncho();
+        int ph = pieza.getAlto();
 
         int mejorCosto = -1;
 
@@ -253,22 +249,27 @@ int Solver::calcularHeuristica(const Estado& estado) const {
             if (salida.getColor() != pieza.getColor()) continue;
             if (!tablero->piezaPodriaSalir(pieza, salida)) continue;
 
-            int dist = abs(pos.x - salida.getPos().x)
-                     + abs(pos.y - salida.getPos().y);
+            coordenada ps = salida.getPos();
 
-            int bloqueos = contarBloqueos(i, pos, salida.getPos(), estado);
-            
-            int costo = dist + bloqueos;
-            //int costo = dist;
+            int dx = 0, dy = 0;
+            if (ps.x < pos.x) dx = pos.x - ps.x;
+            else if (ps.x > pos.x + pw - 1) dx = ps.x - (pos.x + pw - 1);
+
+            if (ps.y < pos.y) dy = pos.y - ps.y;
+            else if (ps.y > pos.y + ph - 1) dy = ps.y - (pos.y + ph - 1);
+
+            int dist = dx + dy;
+
+            int bloqueos = contarBloqueos(i, pos, ps, estado);
+            int costo = dist + bloqueos / 2;
+
             if (mejorCosto == -1 || costo < mejorCosto)
                 mejorCosto = costo;
         }
 
         if (mejorCosto == -1) {
-            mejorCosto = tablero->getW() + tablero->getH();
+            mejorCosto = 0;
         }
-
-        mejorCosto += 1;
 
         total += mejorCosto;
     }
@@ -294,7 +295,8 @@ int Solver::contarBloqueos(int idPieza, coordenada pos,
     return contarBloqueos(idPieza, pos, mejorSalida, estado);
 }
 
-int Solver::contarBloqueos(int idPieza, coordenada pos, coordenada posSalida, const Estado& estado) const {
+int Solver::contarBloqueos(int idPieza, coordenada pos, coordenada posSalida,
+                             const Estado& estado) const {
     int w = tablero->getW();
     short* ocupacion = estado.getOcupacion();
     celda* matriz = tablero->getMatriz();
