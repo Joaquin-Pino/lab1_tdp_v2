@@ -6,8 +6,7 @@
 Solver::Solver(Tablero* t)
     : tablero(t), openSet(nullptr), closedSet(nullptr), vecinosTemp(nullptr) {
     int maxDim = (t->getW() > t->getH()) ? t->getW() : t->getH();
-    (void)maxDim;
-    maxVecinos  = t->getNumPiezas() * 5;
+    maxVecinos  = t->getNumPiezas() * (4 * maxDim + 1);
     openSet     = new MinHeap(1024);
     closedSet   = new TablaHash(100003);  // primo grande
     vecinosTemp = new Estado*[maxVecinos];
@@ -24,50 +23,58 @@ Solver::~Solver() {
     delete[] vecinosTemp;
 }
 
+bool Solver::esMovimientoRedundante(int idPieza, char dir, const Estado* actual) const {
+    const char* prev = actual->getMovimiento();
+    if (prev[0] == '\0' || prev[0] == 'S') return false;
+
+    char prevDir = prev[0];
+    int prevPiezaId = -1;
+    sscanf(prev + 1, "%d", &prevPiezaId);
+
+    Pieza& pieza = tablero->getPiezas()[idPieza];
+    if (pieza.getId() != prevPiezaId) return false;
+
+    // poda: deshacer movimiento previo de la misma pieza es siempre redundante
+    if ((dir == 'U' && prevDir == 'D') || (dir == 'D' && prevDir == 'U') ||
+        (dir == 'L' && prevDir == 'R') || (dir == 'R' && prevDir == 'L')) return true;
+
+    return false;
+}
+
+void Solver::prepararVecino(Estado* vecino, Estado* actual, char mov[10]) const {
+    for (int i = 0; i < tablero->getNumCompuertas(); i++)
+        vecino->actualizarCompuerta(i, tablero->calcularColorCompuerta(i, *vecino));
+    for (int i = 0; i < tablero->getNumSalidas(); i++)
+        vecino->actualizarSalida(i, tablero->calcularLargoSalida(i, *vecino));
+
+    int hv = calcularHeuristica(*vecino);
+    vecino->setH(hv);
+    vecino->setF(vecino->getStepUsed() + hv);
+    vecino->setParent(actual);
+    vecino->setMovimiento(mov);
+}
+
 int Solver::generarVecinos(Estado* actual) {
     int count = 0;
     int numPiezas = tablero->getNumPiezas();
-    int w         = tablero->getW();
-    int hTab      = tablero->getH();
-    celda* matriz = tablero->getMatriz();
+    int w = tablero->getW();
     Pieza* piezas = tablero->getPiezas();
-    Compuerta* compuertas = tablero->getCompuertas();
 
-    const int dx[4]       = { 0,  0, -1,  1};
-    const int dy[4]       = {-1,  1,  0,  0};
-    const char dirChar[4] = {'U','D','L','R'};
-
-    short* ocupacion = actual->getOcupacion();
-
-    const char* prev = actual->getMovimiento();
-    int prevPieza = -1;
-    char prevDir = 0;
-    if (prev[0] != '\0' && prev[0] != 'S') {
-        prevDir = prev[0];
-        sscanf(prev + 1, "%d", &prevPieza);
-    }
+    direccion dirs[4]   = {ARRIBA, ABAJO, IZQUIERDA, DERECHA};
+    int       dx[4]     = { 0,  0, -1,  1};
+    int       dy[4]     = {-1,  1,  0,  0};
+    char      dirChar[4]= {'U', 'D', 'L', 'R'};
 
     for (int id = 0; id < numPiezas; id++) {
         if (actual->piezaYaSalio(id)) continue;
-
         Pieza& pieza = piezas[id];
-        coordenada posOrig = actual->getPosPiezas()[id];
-        int pw = pieza.getAncho();
-        int ph = pieza.getAlto();
 
-        // si la pieza puede salir
         if (tablero->piezaPuedeSalir(id, *actual)) {
-            Estado* vecino = new Estado(*actual);
-            vecino->sacarPieza(id, pieza, w);
-
-            int hv = calcularHeuristica(*vecino);
-            vecino->setH(hv);
-            vecino->setF(vecino->getStepUsed() + hv);
-            vecino->setParent(actual);
+            Estado* vecino = actual->clonarYSacar(id, pieza, w);
 
             char mov[10];
             snprintf(mov, 10, "S%d", pieza.getId());
-            vecino->setMovimiento(mov);
+            prepararVecino(vecino, actual, mov);
 
             vecinosTemp[count++] = vecino;
             if (count >= maxVecinos) return count;
@@ -75,100 +82,14 @@ int Solver::generarVecinos(Estado* actual) {
         }
 
         for (int d = 0; d < 4; d++) {
-            if (id == prevPieza) {
-                if (dirChar[d] == prevDir) continue;
-                if ((dirChar[d] == 'U' && prevDir == 'D') ||
-                    (dirChar[d] == 'D' && prevDir == 'U') ||
-                    (dirChar[d] == 'L' && prevDir == 'R') ||
-                    (dirChar[d] == 'R' && prevDir == 'L')) continue;
-            }
+            //if (esMovimientoRedundante(id, dirChar[d], actual)) continue;
+            if (!tablero->piezaPuedeMoverse(id, dirs[d], *actual)) continue;
 
-            int newX = posOrig.x + dx[d];
-            int newY = posOrig.y + dy[d];
-
-            bool bloqueado = false;
-            for (int i = 0; i < ph && !bloqueado; i++) {
-                for (int j = 0; j < pw && !bloqueado; j++) {
-                    if (!pieza.getCelda(j, i)) continue;
-
-                    int fila    = newY + i;
-                    int columna = newX + j;
-
-                    if (fila < 0 || fila >= hTab || columna < 0 || columna >= w) {
-                        bloqueado = true; break;
-                    }
-
-                    int idx = fila * w + columna;
-
-                    short ocup = ocupacion[idx];
-                    if (ocup != -1 && ocup != id) {
-                        bloqueado = true; break;
-                    }
-
-                    celda& c = matriz[idx];
-                    if (c.tipo == PARED) {
-                        bloqueado = true; break;
-                    }
-
-                    if (c.tipo == COMPUERTA) {
-                        Compuerta& cp = compuertas[c.id];
-                        int colorCompuerta;
-                        if (cp.getPaso() == 0) {
-                            colorCompuerta = cp.getCi();
-                        } else {
-                            int pasoEvaluacion = actual->getStepUsed() + 1;
-                            int ciclo = cp.getCf() - cp.getCi() + 1;
-                            int pc = pasoEvaluacion / cp.getPaso();
-                            colorCompuerta = cp.getCi() + (pc % ciclo);
-                        }
-                        int tamanoBloque = (d == 0 || d == 1) ? pw : ph;
-                        if (!cp.aceptaBloque(pieza.getColor(), tamanoBloque, colorCompuerta)) {
-                            bloqueado = true; break;
-                        }
-                    }
-                }
-            }
-
-            if (bloqueado) continue;
-
-            Estado* vecino = new Estado(*actual);
-            coordenada* posPiezasV = vecino->getPosPiezas();
-            short* ocupV = vecino->getOcupacion();
-
-            for (int i = 0; i < ph; i++) {
-                for (int j = 0; j < pw; j++) {
-                    if (!pieza.getCelda(j, i)) continue;
-                    ocupV[(posOrig.y + i) * w + (posOrig.x + j)] = -1;
-                }
-            }
-
-            posPiezasV[id].x = newX;
-            posPiezasV[id].y = newY;
-
-            for (int i = 0; i < ph; i++) {
-                for (int j = 0; j < pw; j++) {
-                    if (!pieza.getCelda(j, i)) continue;
-                    ocupV[(newY + i) * w + (newX + j)] = id;
-                }
-            }
-
-            vecino->setStepUsed(actual->getStepUsed() + 1);
-
-            for (int i = 0; i < tablero->getNumCompuertas(); i++)
-                vecino->actualizarCompuerta(i,
-                    tablero->calcularColorCompuerta(i, *vecino));
-            for (int i = 0; i < tablero->getNumSalidas(); i++)
-                vecino->actualizarSalida(i,
-                    tablero->calcularLargoSalida(i, *vecino));
-
-            int hv = calcularHeuristica(*vecino);
-            vecino->setH(hv);
-            vecino->setF(vecino->getStepUsed() + hv);
-            vecino->setParent(actual);
+            Estado* vecino = actual->clonarYMover(id, dx[d], dy[d], pieza, w);
 
             char mov[10];
             snprintf(mov, 10, "%c%d,1", dirChar[d], pieza.getId());
-            vecino->setMovimiento(mov);
+            prepararVecino(vecino, actual, mov);
 
             vecinosTemp[count++] = vecino;
             if (count >= maxVecinos) return count;
@@ -176,7 +97,6 @@ int Solver::generarVecinos(Estado* actual) {
     }
     return count;
 }
-
 
 Estado** Solver::reconstruirCamino(Estado* final) {
     int numPasos = 0;
@@ -227,9 +147,17 @@ Estado** Solver::resolver(Estado* estadoInicial) {
 
         closedSet->insertar(actual);
 
+        // poda por f: descarta vecinos que ya no pueden llegar a meta.
+        // El margen tolera la sobreestimación de la heurística por bloqueos.
+        int margen = tablero->getNumPiezas() / 2 + 1;
+
         int numVecinos = generarVecinos(actual);
         for (int i = 0; i < numVecinos; i++) {
             if (vecinosTemp[i]->getStepUsed() > tablero->getStepLimit()) {
+                delete vecinosTemp[i];
+                continue;
+            }
+            if (vecinosTemp[i]->getF() > tablero->getStepLimit() + margen) {
                 delete vecinosTemp[i];
                 continue;
             }

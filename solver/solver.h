@@ -18,6 +18,8 @@ private:
     int calcularHeuristica(const Estado& estado) const;
     int contarBloqueos(int idPieza, coordenada pos, const Estado& estado) const;
     int contarBloqueos(int idPieza, coordenada pos, coordenada posSalida, const Estado& estado) const;
+    bool esMovimientoRedundante(int idPieza, char dir, const Estado* actual) const;
+    void prepararVecino(Estado* vecino, Estado* actual, char mov[10]) const;
 public:
     Solver(Tablero* t);
     Solver(const Solver&) = delete;

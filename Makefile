@@ -1,18 +1,19 @@
 CXX = g++
 CXXFLAGS = -c -O2 -Wall -Wextra
 
-PIEZA     = pieza
-SALIDA    = salida
-COMPUERTA = compuerta
-ESTADO    = estado
-MINHEAP   = minheap
-TABLAHASH = tablaHash
-TABLERO   = tablero
-PARSER    = parser
-SOLVER    = solver
-IMPRESORA = impresora
+PIEZA       = pieza
+SALIDA      = salida
+COMPUERTA   = compuerta
+ESTADO      = estado
+MINHEAP     = minheap
+TABLAHASH   = tablaHash
+TABLERO     = tablero
+PARSER      = parser
+SOLVER      = solver
+IMPRESORA   = impresora
+VERIFICADOR = verificador
 
-all: testMinHeap testTablaHash testSolver main
+all: testMinHeap testTablaHash testSolver testVerificador main
 
 pieza.o: $(PIEZA)/pieza.cpp $(PIEZA)/pieza.h
 	$(CXX) $(CXXFLAGS) $(PIEZA)/pieza.cpp -o pieza.o
@@ -44,6 +45,9 @@ solver.o: $(SOLVER)/solver.cpp $(SOLVER)/solver.h
 impresora.o: $(IMPRESORA)/impresora.cpp $(IMPRESORA)/impresora.h
 	$(CXX) $(CXXFLAGS) $(IMPRESORA)/impresora.cpp -o impresora.o
 
+verificador.o: $(VERIFICADOR)/verificador.cpp $(VERIFICADOR)/verificador.h
+	$(CXX) $(CXXFLAGS) $(VERIFICADOR)/verificador.cpp -o verificador.o
+
 main.o: main.cpp
 	$(CXX) $(CXXFLAGS) main.cpp -o main.o
 
@@ -56,8 +60,11 @@ testTablaHash.o: $(TABLAHASH)/testTablaHash.cpp
 testSolver.o: $(SOLVER)/testSolver.cpp
 	$(CXX) $(CXXFLAGS) $(SOLVER)/testSolver.cpp -o testSolver.o
 
+testVerificador.o: $(VERIFICADOR)/testVerificador.cpp
+	$(CXX) $(CXXFLAGS) $(VERIFICADOR)/testVerificador.cpp -o testVerificador.o
+
 OBJS = pieza.o salida.o compuerta.o estado.o minheap.o tablaHash.o \
-       tablero.o parser.o solver.o impresora.o
+       tablero.o parser.o solver.o impresora.o verificador.o
 
 testMinHeap: pieza.o salida.o compuerta.o estado.o minheap.o testMinHeap.o
 	$(CXX) pieza.o salida.o compuerta.o estado.o minheap.o testMinHeap.o -o testMinHeap
@@ -67,6 +74,9 @@ testTablaHash: pieza.o salida.o compuerta.o estado.o tablaHash.o testTablaHash.o
 
 testSolver: $(OBJS) testSolver.o
 	$(CXX) $(OBJS) testSolver.o -o testSolver
+
+testVerificador: $(OBJS) testVerificador.o
+	$(CXX) $(OBJS) testVerificador.o -o testVerificador
 
 main: $(OBJS) main.o
 	$(CXX) $(OBJS) main.o -o main
@@ -80,8 +90,11 @@ valgrind_tablahash: testTablaHash
 valgrind_solver: testSolver
 	valgrind --leak-check=full --track-origins=yes ./testSolver
 
+valgrind_verificador: testVerificador
+	valgrind --leak-check=full --track-origins=yes ./testVerificador
+
 valgrind_main: main
 	valgrind --leak-check=full --track-origins=yes ./main
 
 clean:
-	rm -f *.o testMinHeap testTablaHash testSolver main
+	rm -f *.o testMinHeap testTablaHash testSolver testVerificador main

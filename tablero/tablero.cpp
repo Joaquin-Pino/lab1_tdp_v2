@@ -148,6 +148,7 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
             }
         }
     }
+
     return true;
 }
 

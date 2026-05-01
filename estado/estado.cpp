@@ -271,3 +271,14 @@ void Estado::eliminarOcupacion() {
     delete[] ocupacion;
     ocupacion = nullptr;
 }
+Estado* Estado::clonarYMover(int id, int dx, int dy, const Pieza& pieza, int w) const {
+    Estado* clon = new Estado(*this);
+    clon->moverPieza(id, dx, dy, pieza, w);
+    return clon;
+}
+
+Estado* Estado::clonarYSacar(int id, const Pieza& pieza, int w) const {
+    Estado* clon = new Estado(*this);
+    clon->sacarPieza(id, pieza, w);
+    return clon;
+}

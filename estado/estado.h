@@ -69,6 +69,10 @@ private:
     void sacarPieza(int id, const Pieza& pieza, int w);
     void actualizarCompuerta(int idx, int color);
     void actualizarSalida(int idx, short largo);
-
     void eliminarOcupacion();
+
+    // crea un clon del estado y le aplica el movimiento (incrementa stepUsed)
+    Estado* clonarYMover(int id, int dx, int dy, const Pieza& pieza, int w) const;
+    // crea un clon del estado y saca la pieza (no incrementa stepUsed)
+    Estado* clonarYSacar(int id, const Pieza& pieza, int w) const;
 };

@@ -4,6 +4,7 @@
 #include "impresora/impresora.h"
 #include "solver/solver.h"
 #include "parser/parser.h"
+#include "verificador/verificador.h"
 
 void menuPrincipal() {
     std::cout << "\n=== COLOR BLOCK JAM SOLVER ===" << std::endl;
@@ -11,7 +12,8 @@ void menuPrincipal() {
     std::cout << "2. Resolver" << std::endl;
     std::cout << "3. Mostrar tablero" << std::endl;
     std::cout << "4. Mostrar solucion paso a paso" << std::endl;
-    std::cout << "5. Salir" << std::endl;
+    std::cout << "5. Verificar secuencia de movimientos" << std::endl;
+    std::cout << "6. Salir" << std::endl;
     std::cout << "Opcion: ";
 }
 
@@ -23,7 +25,7 @@ int main() {
 
     int opcion = 0;
 
-    while (opcion != 5) {
+    while (opcion != 6) {
         menuPrincipal();
         std::cin >> opcion; // TODO: validar input, si se ingresa string se rompe
         
@@ -76,7 +78,11 @@ int main() {
 
                 Solver solver(tablero);
                 Estado* estadoCopia = new Estado(*estadoInicial);
+
+                
                 solucion = solver.resolver(estadoCopia);
+                
+                
 
                 clock_t fin = clock();
                 double tiempoMs = (double)(fin - inicio) / CLOCKS_PER_SEC * 1000.0;
@@ -110,11 +116,29 @@ int main() {
                     std::cout << "Primero resuelva el tablero (opcion 2)." << std::endl;
                     break;
                 }
-                Impresora::imprimirSolucion(*tablero, solucion);
+                Impresora::imprimirSolucionPasoAPaso(*tablero, solucion);
                 break;
             }
 
             case 5: {
+                if (!tablero || !estadoInicial) {
+                    std::cout << "Primero cargue un archivo de configuracion." << std::endl;
+                    break;
+                }
+                std::cout << "Ingrese la secuencia de movimientos: ";
+                char secuencia[4096];
+                std::cin >> secuencia;
+
+                Verificador verificador(tablero);
+                bool valido = verificador.verificarSolucion(secuencia, estadoInicial);
+                if (valido)
+                    std::cout << "Secuencia valida." << std::endl;
+                else
+                    std::cout << "Secuencia invalida." << std::endl;
+                break;
+            }
+
+            case 6: {
                 std::cout << "Saliendo..." << std::endl;
                 break;
             }

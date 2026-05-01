@@ -76,25 +76,24 @@ void Impresora::imprimirEstado(const Tablero& tablero, const Estado& estado) {
 }
 
 void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
-    int numPasos = 0;
-     if (!solucion) {
+    (void)tablero;
+    if (!solucion) {
         std::cout << "Juego sin solución" << std::endl;
         return;
     }
-    
-    while (solucion[numPasos] != nullptr){ 
-        numPasos++;
-    }
+
+    int numPasos = 0;
+    while (solucion[numPasos] != nullptr) numPasos++;
 
     if (numPasos == 0) {
         std::cout << "Juego sin solución" << std::endl;
         return;
     }
-   
 
-    // imprimir string de solución (consolidando movimientos consecutivos
-    // de la misma pieza en la misma direccion)
+    // string de solución, consolidando movimientos consecutivos
+    // de la misma pieza en la misma direccion
     std::cout << "Solución: ";
+
     char dirAcum = 0;
     int piezaAcum = -1;
     int countAcum = 0;
@@ -107,7 +106,7 @@ void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
                 dirAcum = 0;
                 piezaAcum = -1;
             }
-        
+            std::cout << mov;
             continue;
         }
         char dir = mov[0];
@@ -136,13 +135,29 @@ void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
         std::cout << dirAcum << piezaAcum << "," << countAcum;
     }
     std::cout << std::endl;
+}
 
-    // imprimir cada estado
+void Impresora::imprimirSolucionPasoAPaso(const Tablero& tablero, Estado** solucion){
+    if (!solucion) {
+        std::cout << "Juego sin solución" << std::endl;
+        return;
+    }
+
+    int numPasos = 0;
+    while (solucion[numPasos] != nullptr) numPasos++;
+
+    if (numPasos == 0) {
+        std::cout << "Juego sin solución" << std::endl;
+        return;
+    }
+
+    imprimirSolucion(tablero, solucion);
+
     for (int i = 0; i < numPasos; i++) {
         if (i == 0)
             std::cout << "Estado inicial:" << std::endl;
         else
-            std::cout << "Paso " << i << " - " 
+            std::cout << "Paso " << i << " - "
                       << solucion[i]->getMovimiento() << ":" << std::endl;
         imprimirEstado(tablero, *solucion[i]);
     }
