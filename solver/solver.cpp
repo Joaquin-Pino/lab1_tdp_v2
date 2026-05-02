@@ -240,11 +240,6 @@ int Solver::contarBloqueos(int idPieza, coordenada pos, coordenada posSalida,
     short* ocupacion = estado.getOcupacion();
     celda* matriz = tablero->getMatriz();
 
-    int xMin = pos.x < posSalida.x ? pos.x : posSalida.x;
-    int xMax = pos.x < posSalida.x ? posSalida.x : pos.x;
-    int yMin = pos.y < posSalida.y ? pos.y : posSalida.y;
-    int yMax = pos.y < posSalida.y ? posSalida.y : pos.y;
-
     int bloqueosHorizPrimero = 0;
     {
         int xIni = pos.x < posSalida.x ? pos.x + 1 : pos.x - 1;

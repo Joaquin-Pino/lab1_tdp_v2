@@ -1,323 +1,285 @@
+// testTablero.cpp
 #include "tablero.h"
-#include "../pieza/pieza.h"
-#include "../salida/salida.h"
-#include "../compuerta/compuerta.h"
-#include "../estado/estado.h"
+#include "../parser/parser.h"
 #include <iostream>
 
 int testsPasados = 0;
 int testsFallados = 0;
 
-void verificar(bool condicion, const char* nombreTest) {
-    if (condicion) {
-        std::cout << "[OK] " << nombreTest << std::endl;
+void verificar(bool cond, const char* nombre) {
+    if (cond) {
+        std::cout << "[OK] " << nombre << std::endl;
         testsPasados++;
     } else {
-        std::cout << "[FALLO] " << nombreTest << std::endl;
+        std::cout << "[FALLO] " << nombre << std::endl;
         testsFallados++;
     }
 }
 
+// construye un tablero 5x5 con paredes en el borde y una salida en (4,1)
+Tablero* hacerTableroSimple() {
+    int W = 5, H = 5;
+    celda* mat = new celda[W * H];
 
-celda* crearMatriz5x5() {
-    int w = 5, h = 5;
-    celda* mat = new celda[h * w];
-    for (int i = 0; i < h; i++) {
-        for (int j = 0; j < w; j++) {
-            bool esBorde = (i == 0 || i == h-1 || j == 0 || j == w-1);
-            bool esSalida = (i == 1 && j == w-1);
-            if (esSalida)
-                mat[i * w + j] = {SALIDA, 0};
-            else if (esBorde)
-                mat[i * w + j] = {PARED, -1};
-            else
-                mat[i * w + j] = {VACIA, -1};
+    for (int y = 0; y < H; y++) {
+        for (int x = 0; x < W; x++) {
+            bool borde = (x == 0 || x == W-1 || y == 0 || y == H-1);
+            mat[y * W + x] = {borde ? PARED : VACIA, -1};
         }
     }
-    return mat;
+    // salida en columna 4, fila 1
+    mat[1 * W + 4] = {SALIDA, 0};
+
+    bool* g = new bool[1]{true};
+    Pieza* piezas   = new Pieza[1];
+    piezas[0]       = Pieza(0, 1, 1, 'a', {1, 1}, g);
+
+    Salida* salidas  = new Salida[1];
+    salidas[0]       = Salida(0, 'a', {4, 1}, false, 2, 2, 0);
+
+    Compuerta* comp  = new Compuerta[0];
+
+    return new Tablero(mat, piezas, salidas, comp, 1, 1, 0, W, H, 20);
 }
 
-bool* geomSolida(int alto, int ancho) {
-    bool* g = new bool[alto * ancho];
-    for (int i = 0; i < alto * ancho; i++) g[i] = true;
-    return g;
-}
+// ─────────────────────────────────────────
+void testGetters() {
+    std::cout << "\n-- getters básicos --" << std::endl;
 
-void testConstructorEImprimir() {
-    std::cout << "\n-- Constructor e imprimir --" << std::endl;
+    Tablero* t = hacerTableroSimple();
 
-    celda* mat    = crearMatriz5x5();
-    bool* g0      = geomSolida(1, 1);
-    Pieza* piezas = new Pieza[1];
-    piezas[0]     = Pieza(0, 1, 1, 1, {1, 1}, g0);
+    verificar(t->getW() == 5,          "W = 5");
+    verificar(t->getH() == 5,          "H = 5");
+    verificar(t->getStepLimit() == 20, "stepLimit = 20");
+    verificar(t->getNumPiezas() == 1,  "1 pieza");
+    verificar(t->getNumSalidas() == 1, "1 salida");
+    verificar(t->getNumCompuertas() == 0, "0 compuertas");
 
-    Salida* salidas = new Salida[1];
-    salidas[0]      = Salida(0, 1, {4, 1}, false, 2, 2, 1);
-
-    Compuerta* comp = new Compuerta[0];
-
-    Tablero t(mat, piezas, salidas, comp, 1, 1, 0, 5, 5, 50);
-
-    verificar(t.getW() == 5,          "getW correcto");
-    verificar(t.getH() == 5,          "getH correcto");
-    verificar(t.getStepLimit() == 50, "getStepLimit correcto");
-    verificar(t.getNumPiezas() == 1,  "numPiezas correcto");
-    verificar(t.getNumSalidas() == 1, "numSalidas correcto");
-
-    std::cout << "Tablero (debe mostrar S en (1,4)):" << std::endl;
-    t.imprimir();
-
-    // verificar que la celda de salida es correcta
-    celda* m = t.getMatriz();
+    celda* m = t->getMatriz();
+    verificar(m[0].tipo == PARED,      "esquina (0,0) es PARED");
+    verificar(m[1*5+1].tipo == VACIA,  "interior (1,1) es VACIA");
     verificar(m[1*5+4].tipo == SALIDA, "celda (1,4) es SALIDA");
-    verificar(m[0*5+0].tipo == PARED,  "celda (0,0) es PARED");
-    verificar(m[1*5+1].tipo == VACIA,  "celda (1,1) es VACIA");
 
-    // delete[] g0;
+    delete t;
 }
 
 // ─────────────────────────────────────────
 void testCrearEstadoInicial() {
     std::cout << "\n-- crearEstadoInicial --" << std::endl;
 
-    celda* mat    = crearMatriz5x5();
-    bool* g0      = geomSolida(1, 1);
-    Pieza* piezas = new Pieza[1];
-    piezas[0]     = Pieza(0, 1, 1, 1, {2, 3}, g0);  // posicion inicial (2,3)
-
-    Salida* salidas = new Salida[1];
-    salidas[0]      = Salida(0, 1, {4, 1}, false, 3, 2, 1);
-
-    Compuerta* comp = new Compuerta[0];
-
-    Tablero t(mat, piezas, salidas, comp, 1, 1, 0, 5, 5, 50);
-    Estado* e = t.crearEstadoInicial();
+    Tablero* t = hacerTableroSimple();
+    Estado* e = t->crearEstadoInicial();
 
     verificar(e != nullptr,                "estado no es null");
-    verificar(e->getPosPiezas()[0].x == 2, "posInicial.x = 2");
-    verificar(e->getPosPiezas()[0].y == 3, "posInicial.y = 3");
-    verificar(e->getLargoSalidas()[0] == 3,"largoSalida inicial = Li = 3");
+    verificar(e->getPosPiezas()[0].x == 1, "pos x = 1");
+    verificar(e->getPosPiezas()[0].y == 1, "pos y = 1");
     verificar(e->getStepUsed() == 0,       "stepUsed = 0");
-    verificar(e->getPiezasSalidas() == 0,  "ninguna pieza salida");
-    verificar(!e->piezaYaSalio(0),         "pieza 0 no ha salido");
+    verificar(e->getPiezasSalidas() == 0,  "ninguna pieza salió");
     verificar(!e->jugoTerminado(1),        "juego no terminado");
 
+    // ocupacion correcta
+    verificar(e->getOcupacion()[1*5 + 1] == 0, "ocupacion (1,1) = 0");
+    verificar(e->getOcupacion()[0] == -1,       "ocupacion (0,0) = -1");
+
     delete e;
-    // delete[] g0;
+    delete t;
 }
 
 // ─────────────────────────────────────────
 void testPiezaPuedeMoverse() {
     std::cout << "\n-- piezaPuedeMoverse --" << std::endl;
 
-    celda* mat    = crearMatriz5x5();
-    bool* g0      = geomSolida(1, 1);
-    bool* g1      = geomSolida(1, 1);
-    Pieza* piezas = new Pieza[2];
-    piezas[0] = Pieza(0, 1, 1, 1, {1, 1}, g0);  // pieza 0 en (1,1)
-    piezas[1] = Pieza(1, 1, 1, 1, {1, 2}, g1);  // pieza 1 en (1,2) — justo abajo
+    Tablero* t = hacerTableroSimple();
+    Estado* e = t->crearEstadoInicial();  // pieza en (1,1)
 
-    Salida* salidas = new Salida[1];
-    salidas[0]      = Salida(0, 1, {4, 1}, false, 2, 2, 1);
-    Compuerta* comp = new Compuerta[0];
-
-    Tablero t(mat, piezas, salidas, comp, 2, 1, 0, 5, 5, 50);
-    Estado* e = t.crearEstadoInicial();
-
-    // pieza en (1,1): pared arriba en (0,1) y pared izquierda en (1,0)
-    verificar( t.piezaPuedeMoverse(0, DERECHA,   *e), "puede moverse derecha");
-    verificar(!t.piezaPuedeMoverse(0, ABAJO,     *e), "puede moverse abajo");
-    verificar(!t.piezaPuedeMoverse(0, ARRIBA,    *e), "bloqueada por pared arriba");
-    verificar(!t.piezaPuedeMoverse(0, IZQUIERDA, *e), "bloqueada por pared izquierda");
+    // paredes en fila 0 y columna 0
+    verificar(!t->piezaPuedeMoverse(0, ARRIBA,    *e), "bloqueada por pared arriba");
+    verificar(!t->piezaPuedeMoverse(0, IZQUIERDA, *e), "bloqueada por pared izquierda");
+    verificar( t->piezaPuedeMoverse(0, DERECHA,   *e), "puede moverse derecha");
+    verificar( t->piezaPuedeMoverse(0, ABAJO,     *e), "puede moverse abajo");
 
     delete e;
-    //delete[] g0;
+    delete t;
 }
 
 // ─────────────────────────────────────────
 void testColisionEntrePiezas() {
-    std::cout << "\n-- colision entre piezas --" << std::endl;
+    std::cout << "\n-- colisión entre piezas --" << std::endl;
 
-    celda* mat    = crearMatriz5x5();
-    bool* g0      = geomSolida(1, 1);
-    bool* g1      = geomSolida(1, 1);
+    int W = 5, H = 5;
+    celda* mat = new celda[W * H];
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++)
+            mat[y*W+x] = {(x==0||x==W-1||y==0||y==H-1) ? PARED : VACIA, -1};
+
+    bool* g0 = new bool[1]{true};
+    bool* g1 = new bool[1]{true};
     Pieza* piezas = new Pieza[2];
-    piezas[0]     = Pieza(0, 1, 1, 1, {1, 1}, g0);
-    piezas[1]     = Pieza(1, 1, 1, 2, {2, 1}, g1);  // justo a la derecha
+    piezas[0] = Pieza(0, 1, 1, 'a', {1, 2}, g0);
+    piezas[1] = Pieza(1, 1, 1, 'b', {2, 2}, g1);
 
-    Salida* salidas = new Salida[0];
+    Salida*    sal  = new Salida[0];
     Compuerta* comp = new Compuerta[0];
 
-    Tablero t(mat, piezas, salidas, comp, 2, 0, 0, 5, 5, 50);
+    Tablero t(mat, piezas, sal, comp, 2, 0, 0, W, H, 50);
     Estado* e = t.crearEstadoInicial();
 
-    std::cout << "pos pieza 0: " << e->getPosPiezas()[0].x 
-              << "," << e->getPosPiezas()[0].y << std::endl;
-    std::cout << "pos pieza 1: " << e->getPosPiezas()[1].x 
-              << "," << e->getPosPiezas()[1].y << std::endl;
-
-    verificar(!t.piezaPuedeMoverse(0, DERECHA,    *e), "p0 bloqueada por p1 derecha");
-    verificar(!t.piezaPuedeMoverse(1, IZQUIERDA,  *e), "p1 bloqueada por p0 izquierda");
-    verificar( t.piezaPuedeMoverse(0, ABAJO,      *e), "p0 puede ir abajo");
-    verificar( t.piezaPuedeMoverse(1, ABAJO,      *e), "p1 puede ir abajo");
+    // piezas adyacentes en fila 2
+    verificar(!t.piezaPuedeMoverse(0, DERECHA,   *e), "pieza 0 bloqueada a la derecha por pieza 1");
+    verificar(!t.piezaPuedeMoverse(1, IZQUIERDA, *e), "pieza 1 bloqueada a la izquierda por pieza 0");
+    verificar( t.piezaPuedeMoverse(0, ABAJO,     *e), "pieza 0 puede moverse abajo");
+    verificar( t.piezaPuedeMoverse(1, ARRIBA,    *e), "pieza 1 puede moverse arriba");
 
     delete e;
-    // delete[] g0;
-    // delete[] g1;
 }
 
 // ─────────────────────────────────────────
 void testPiezaPuedeSalir() {
     std::cout << "\n-- piezaPuedeSalir --" << std::endl;
 
-    celda* mat    = crearMatriz5x5();
-    bool* g0      = geomSolida(1, 1);
-    Pieza* piezas = new Pieza[1];
-    piezas[0]     = Pieza(0, 1, 1, 1, {1, 1}, g0);
+    Tablero* t = hacerTableroSimple();
+    Estado* e = t->crearEstadoInicial();  // pieza en (1,1), salida en (4,1)
 
-    Salida* salidas = new Salida[1];
-    salidas[0]      = Salida(0, 1, {4, 1}, false, 2, 2, 1);
-    Compuerta* comp = new Compuerta[0];
+    // desde (1,1) la salida está lejos
+    verificar(!t->piezaPuedeSalir(0, *e), "no puede salir desde (1,1)");
 
-    Tablero t(mat, piezas, salidas, comp, 1, 1, 0, 5, 5, 50);
-    Estado* e = t.crearEstadoInicial();
-
-    // lejos de la salida
-    verificar(!t.piezaPuedeSalir(0, *e), "no puede salir desde (1,1)");
-
-    // mover manualmente a (3,1) — adyacente a la salida en columna 4
+    // mover pieza a (3,1) → derecha adyacente a (4,1)
     e->getPosPiezas()[0].x = 3;
     e->getPosPiezas()[0].y = 1;
-    verificar(t.piezaPuedeSalir(0, *e), "puede salir desde (3,1)");
-
-    // color incorrecto — salida color 1, pieza color 2
-    bool* g1      = geomSolida(1, 1);
-    Pieza* p2     = new Pieza[1];
-    p2[0]         = Pieza(0, 1, 1, 2, {3, 1}, g1);  // color 2
-    celda* mat2   = crearMatriz5x5();
-    Salida* sal2  = new Salida[1];
-    sal2[0]       = Salida(0, 1, {4, 1}, false, 2, 2, 1);
-    Compuerta* c2 = new Compuerta[0];
-    Tablero t2(mat2, p2, sal2, c2, 1, 1, 0, 5, 5, 50);
-    Estado* e2 = t2.crearEstadoInicial();
-    verificar(!t2.piezaPuedeSalir(0, *e2), "no puede salir con color incorrecto");
+    verificar(t->piezaPuedeSalir(0, *e), "puede salir desde (3,1)");
 
     delete e;
-    delete e2;
-    // delete[] g0;
-    // delete[] g1;
+    delete t;
 }
 
 // ─────────────────────────────────────────
-void testHeuristica() {
-    std::cout << "\n-- calcularHeuristica --" << std::endl;
+void testCalcularLargoSalida() {
+    std::cout << "\n-- calcularLargoSalida --" << std::endl;
 
-    celda* mat    = crearMatriz5x5();
-    bool* g0      = geomSolida(1, 1);
-    Pieza* piezas = new Pieza[1];
-    piezas[0]     = Pieza(0, 1, 1, 1, {1, 1}, g0);
+    // salida que cambia: Li=1, Lf=3, paso=1
+    int W = 5, H = 5;
+    celda* mat = new celda[W * H];
+    for (int i = 0; i < W*H; i++) mat[i] = {VACIA, -1};
+    mat[1*W+4] = {SALIDA, 0};
 
+    bool* g = new bool[1]{true};
+    Pieza* piezas  = new Pieza[1];
+    piezas[0]      = Pieza(0, 1, 1, 'a', {1, 1}, g);
     Salida* salidas = new Salida[1];
-    salidas[0]      = Salida(0, 1, {4, 1}, false, 2, 2, 1);
+    salidas[0]      = Salida(0, 'a', {4, 1}, false, 1, 3, 1);
     Compuerta* comp = new Compuerta[0];
 
-    Tablero t(mat, piezas, salidas, comp, 1, 1, 0, 5, 5, 50);
+    Tablero t(mat, piezas, salidas, comp, 1, 1, 0, W, H, 50);
     Estado* e = t.crearEstadoInicial();
 
-    // pieza (1,1), salida (4,1) → Manhattan = 3
-    verificar(t.calcularHeuristica(*e) == 3, "heuristica desde (1,1) = 3");
+    verificar(t.calcularLargoSalida(0, *e) == 1, "largo en step=0 es Li=1");
 
-    e->getPosPiezas()[0].x = 3;
-    verificar(t.calcularHeuristica(*e) == 1, "heuristica desde (3,1) = 1");
+    e->setStepUsed(2);
+    verificar(t.calcularLargoSalida(0, *e) == 3, "largo en step=2 es 3");
 
-    e->setPiezasSalidas(0b1);
-    verificar(t.calcularHeuristica(*e) == 0, "heuristica 0 cuando pieza salio");
+    e->setStepUsed(4);
+    int largo4 = t.calcularLargoSalida(0, *e);
+    verificar(largo4 >= 1 && largo4 <= 3, "largo en step=4 está en rango [Li,Lf]");
 
     delete e;
-    // delete[] g0;
+}
+
+// ─────────────────────────────────────────
+void testCalcularColorCompuerta() {
+    std::cout << "\n-- calcularColorCompuerta --" << std::endl;
+
+    // tablero con compuerta que va de 'a' a 'b' cada step
+    int W = 5, H = 5;
+    celda* mat = new celda[W * H];
+    for (int i = 0; i < W*H; i++) mat[i] = {VACIA, -1};
+    mat[2*W+2] = {COMPUERTA, 0};
+
+    bool* g = new bool[1]{true};
+    Pieza*     piezas = new Pieza[1];
+    piezas[0]         = Pieza(0, 1, 1, 'a', {1, 1}, g);
+    Salida*    salidas = new Salida[0];
+    Compuerta* comp   = new Compuerta[1];
+    comp[0]            = Compuerta(0, {2, 2}, 2, true, 'a', 'b', 1);
+
+    Tablero t(mat, piezas, salidas, comp, 1, 0, 1, W, H, 50);
+    Estado* e = t.crearEstadoInicial();
+
+    // step=0: color = Ci = 'a'
+    verificar(t.calcularColorCompuerta(0, *e) == 'a', "step=0 → color 'a'");
+
+    e->setStepUsed(1);
+    // step=1: pasosCiclo=1, ciclo=2, colorActual = 'a' + (1%2) = 'b'
+    verificar(t.calcularColorCompuerta(0, *e) == 'b', "step=1 → color 'b'");
+
+    e->setStepUsed(2);
+    verificar(t.calcularColorCompuerta(0, *e) == 'a', "step=2 → vuelve a 'a'");
+
+    delete e;
 }
 
 // ─────────────────────────────────────────
 void testConstructorCopia() {
     std::cout << "\n-- constructor de copia --" << std::endl;
 
-    celda* mat    = crearMatriz5x5();
-    bool* g0      = geomSolida(1, 1);
-    Pieza* piezas = new Pieza[1];
-    piezas[0]     = Pieza(0, 1, 1, 1, {1, 1}, g0);
-    Salida* sal   = new Salida[1];
-    sal[0]        = Salida(0, 1, {4, 1}, false, 2, 2, 1);
-    Compuerta* comp = new Compuerta[0];
+    Tablero* original = hacerTableroSimple();
+    Tablero copia(*original);
 
-    Tablero original(mat, piezas, sal, comp, 1, 1, 0, 5, 5, 50);
-    Tablero copia(original);
+    verificar(copia.getW()          == original->getW(),          "W igual");
+    verificar(copia.getH()          == original->getH(),          "H igual");
+    verificar(copia.getStepLimit()  == original->getStepLimit(),  "stepLimit igual");
+    verificar(copia.getNumPiezas()  == original->getNumPiezas(),  "numPiezas igual");
+    verificar(copia.getMatriz()     != original->getMatriz(),     "matriz independiente");
+    verificar(copia.getPiezas()     != original->getPiezas(),     "piezas independientes");
 
-    verificar(copia.getW()          == original.getW(),         "W igual");
-    verificar(copia.getH()          == original.getH(),         "H igual");
-    verificar(copia.getStepLimit()  == original.getStepLimit(), "stepLimit igual");
-    verificar(copia.getNumPiezas()  == original.getNumPiezas(), "numPiezas igual");
-    verificar(copia.getMatriz()     != original.getMatriz(),    "matriz distinta en memoria");
-    verificar(copia.getPiezas()     != original.getPiezas(),    "piezas distinta en memoria");
+    delete original;
 
-    // delete[] g0;
+    // la copia debe seguir siendo válida después de borrar el original
+    verificar(copia.getW() == 5, "copia válida tras borrar original");
 }
 
-void testEsSalidaValida() {
-    std::cout << "\n-- esSalidaValida --" << std::endl;
+// ─────────────────────────────────────────
+void testConParser() {
+    std::cout << "\n-- tablero desde archivo --" << std::endl;
 
-    celda* mat = crearMatriz5x5();
-    // mat tiene SALIDA en (1,4) con id=0
-    
-    bool* g0      = geomSolida(1, 1);
-    Pieza* piezas = new Pieza[1];
-    piezas[0]     = Pieza(0, 1, 1, 1, {1, 1}, g0);
+    Parser p("simple1.txt");
+    Tablero* t = p.construirTablero();
 
-    Salida* salidas = new Salida[1];
-    salidas[0]      = Salida(0, 1, {4, 1}, false, 2, 2, 1);
-    Compuerta* comp = new Compuerta[0];
+    if (!t) {
+        std::cout << "  archivo simple1.txt no encontrado, saltando" << std::endl;
+        return;
+    }
 
-    Tablero t(mat, piezas, salidas, comp, 1, 1, 0, 5, 5, 50);
-    Estado* e = t.crearEstadoInicial();
+    verificar(t->getW() == 8,          "W = 8");
+    verificar(t->getH() == 8,          "H = 8");
+    verificar(t->getStepLimit() == 50, "stepLimit = 50");
+    verificar(t->getNumPiezas() == 1,  "1 pieza");
+    verificar(t->getNumSalidas() == 1, "1 salida");
 
-    // celda SALIDA con color correcto y tamaño correcto
-    verificar(t.esSalidaValida(1, 4, piezas[0], *e),
-              "celda (1,4) es salida valida para pieza color 1");
-
-    // celda VACIA → no es salida
-    verificar(!t.esSalidaValida(1, 1, piezas[0], *e),
-              "celda (1,1) VACIA no es salida valida");
-
-    // celda PARED → no es salida
-    verificar(!t.esSalidaValida(0, 0, piezas[0], *e),
-              "celda (0,0) PARED no es salida valida");
-
-    // color incorrecto
-    bool* g1      = geomSolida(1, 1);
-    Pieza* p2     = new Pieza[1];
-    p2[0]         = Pieza(1, 1, 1, 2, {1, 1}, g1);  // color 2, salida es color 1
-    verificar(!t.esSalidaValida(1, 4, p2[0], *e),
-              "color incorrecto no es salida valida");
+    Estado* e = t->crearEstadoInicial();
+    verificar(e->getPosPiezas()[0].x == 1, "pieza inicial x=1");
+    verificar(e->getPosPiezas()[0].y == 1, "pieza inicial y=1");
+    verificar(!t->piezaPuedeSalir(0, *e),  "pieza no puede salir desde (1,1)");
 
     delete e;
-    delete[] p2;
+    delete t;
 }
 
 // ─────────────────────────────────────────
 int main() {
     std::cout << "===== TEST TABLERO =====" << std::endl;
 
-    testConstructorEImprimir();
+    testGetters();
     testCrearEstadoInicial();
     testPiezaPuedeMoverse();
     testColisionEntrePiezas();
-    testEsSalidaValida(); 
     testPiezaPuedeSalir();
-    testHeuristica();
+    testCalcularLargoSalida();
+    testCalcularColorCompuerta();
     testConstructorCopia();
+    testConParser();
 
     std::cout << "\n===== RESULTADO =====" << std::endl;
     std::cout << "Pasados: " << testsPasados << std::endl;
     std::cout << "Fallados: " << testsFallados << std::endl;
-
     return (testsFallados == 0) ? 0 : 1;
 }

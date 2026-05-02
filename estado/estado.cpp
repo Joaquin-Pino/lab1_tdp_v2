@@ -28,7 +28,7 @@ Estado::Estado(int numPiezas, int numCompuertas, int numSalidas,
     for (int i = 0; i < numSalidas; i++)
         this->largoSalidas[i] = largoSalidas[i];
 
-    strncpy(this->movimiento, movimiento, 10);
+    memcpy(this->movimiento, movimiento, 9);
     this->movimiento[9] = '\0';
 
     this->ocupacion = new short[width * height];
@@ -55,8 +55,8 @@ Estado::Estado(const Estado& otro) : numPiezas(otro.numPiezas), numCompuertas(ot
         largoSalidas[i] = otro.largoSalidas[i];
     }
     
-    strncpy(movimiento, otro.movimiento, 10);
-    this->movimiento[9] = '\0'; // asegurar terminacion
+    memcpy(movimiento, otro.movimiento, 9);
+    movimiento[9] = '\0';
 
     if (otro.ocupacion) {
     ocupacion = new short[width * height];
@@ -102,8 +102,8 @@ Estado& Estado::operator=(const Estado& otro) {
         largoSalidas[i] = otro.largoSalidas[i];
     }
     
-    strncpy(movimiento, otro.movimiento, 10);
-    this->movimiento[9] = '\0'; // asegurar terminacion
+    memcpy(movimiento, otro.movimiento, 9);
+    movimiento[9] = '\0';
 
     if (otro.ocupacion) {
     ocupacion = new short[width * height];
