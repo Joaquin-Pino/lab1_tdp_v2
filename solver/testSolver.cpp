@@ -132,11 +132,11 @@ void testEstadoInicial() {
 
     Estado* e = tablero->crearEstadoInicial();
 
-    verificar(e->getStepUsed() == 0,             "stepUsed inicial = 0");
-    verificar(e->getPiezasSalidas() == 0,        "ninguna pieza salida");
+    verificar(e->getStepUsed() == 0,  "stepUsed inicial = 0");
+    verificar(e->getPiezasSalidas() == 0, "ninguna pieza salida");
     verificar(!e->jugoTerminado(tablero->getNumPiezas()), "juego no terminado");
-    verificar(e->getPosPiezas()[0].x == 1,       "pieza x=1");
-    verificar(e->getPosPiezas()[0].y == 1,       "pieza y=1");
+    verificar(e->getPosPiezas()[0].x == 1, "pieza x=1");
+    verificar(e->getPosPiezas()[0].y == 1, "pieza y=1");
 
     // no liberar estadoInicial — lo libera el solver
     Solver solver(tablero);

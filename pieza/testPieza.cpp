@@ -23,10 +23,10 @@ int main() {
     std::cout << "\n-- constructor default --" << std::endl;
     {
         Pieza vacia;
-        verificar(vacia.getId() == -1,            "id es -1");
-        verificar(vacia.getAncho() == -1,          "ancho es -1");
-        verificar(vacia.getAlto() == -1,           "alto es -1");
-        verificar(vacia.getColor() == -1,          "color es -1");
+        verificar(vacia.getId() == -1, "id es -1");
+        verificar(vacia.getAncho() == -1, "ancho es -1");
+        verificar(vacia.getAlto() == -1, "alto es -1");
+        verificar(vacia.getColor() == -1, "color es -1");
         verificar(vacia.getGeometria() == nullptr, "geometria es nullptr");
     }
 
@@ -37,10 +37,10 @@ int main() {
         coordenada pos = {2, 5};
         Pieza p(3, 3, 2, 'b', pos, geom);
 
-        verificar(p.getId() == 3,           "id correcto");
-        verificar(p.getAncho() == 3,        "ancho correcto");
-        verificar(p.getAlto() == 2,         "alto correcto");
-        verificar(p.getColor() == 'b',      "color correcto");
+        verificar(p.getId() == 3,  "id correcto");
+        verificar(p.getAncho() == 3, "ancho correcto");
+        verificar(p.getAlto() == 2, "alto correcto");
+        verificar(p.getColor() == 'b', "color correcto");
         verificar(p.getPosInicial().x == 2, "pos inicial x");
         verificar(p.getPosInicial().y == 5, "pos inicial y");
         verificar(p.getGeometria() == geom, "geometria apunta al original");
@@ -68,10 +68,10 @@ int main() {
         coordenada pos = {0, 0};
         Pieza p(2, 2, 2, 'c', pos, geom);
 
-        verificar(p.getCelda(0, 0) == true,  "(0,0) activa");
+        verificar(p.getCelda(0, 0) == true, "(0,0) activa");
         verificar(p.getCelda(1, 0) == false, "(1,0) vacía");
-        verificar(p.getCelda(0, 1) == true,  "(0,1) activa");
-        verificar(p.getCelda(1, 1) == true,  "(1,1) activa");
+        verificar(p.getCelda(0, 1) == true, "(0,1) activa");
+        verificar(p.getCelda(1, 1) == true, "(1,1) activa");
     }
 
     // -- getCelda fuera de rango lanza excepción --
@@ -105,9 +105,9 @@ int main() {
         Pieza original(4, 2, 1, 'd', pos, geom);
         Pieza copia(original);
 
-        verificar(copia.getId() == original.getId(),               "copia: id");
-        verificar(copia.getAncho() == original.getAncho(),         "copia: ancho");
-        verificar(copia.getColor() == original.getColor(),         "copia: color");
+        verificar(copia.getId() == original.getId(), "copia: id");
+        verificar(copia.getAncho() == original.getAncho(), "copia: ancho");
+        verificar(copia.getColor() == original.getColor(), "copia: color");
         verificar(copia.getGeometria() != original.getGeometria(), "copia: punteros distintos");
         verificar(copia.getCelda(0, 0) == original.getCelda(0, 0),"copia: geom[0] ok");
         verificar(copia.getCelda(1, 0) == original.getCelda(1, 0),"copia: geom[1] ok");
@@ -125,9 +125,9 @@ int main() {
         Pieza b(2, 2, 2, 'y', p2, g2);
         a = b;
 
-        verificar(a.getId() == 2,                        "asig: id actualizado");
-        verificar(a.getAncho() == 2,                     "asig: ancho actualizado");
-        verificar(a.getGeometria() != b.getGeometria(),  "asig: punteros independientes");
+        verificar(a.getId() == 2, "asig: id actualizado");
+        verificar(a.getAncho() == 2, "asig: ancho actualizado");
+        verificar(a.getGeometria() != b.getGeometria(), "asig: punteros independientes");
         verificar(a.getCelda(0, 0) == b.getCelda(0, 0), "asig: geom copiada");
 
         a = a;  // autoasignación

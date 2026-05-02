@@ -34,13 +34,13 @@ void testConstructorDefault() {
     std::cout << "\n-- constructor default --" << std::endl;
 
     Estado e;
-    verificar(e.getNumPiezas() == 0,     "numPiezas 0");
+    verificar(e.getNumPiezas() == 0, "numPiezas 0");
     verificar(e.getNumCompuertas() == 0, "numCompuertas 0");
-    verificar(e.getNumSalidas() == 0,    "numSalidas 0");
-    verificar(e.getStepUsed() == 0,      "stepUsed 0");
-    verificar(e.getF() == 0,             "f 0");
-    verificar(e.getH() == 0,             "h 0");
-    verificar(e.getParent() == nullptr,  "parent nulo");
+    verificar(e.getNumSalidas() == 0, "numSalidas 0");
+    verificar(e.getStepUsed() == 0, "stepUsed 0");
+    verificar(e.getF() == 0, "f 0");
+    verificar(e.getH() == 0, "h 0");
+    verificar(e.getParent() == nullptr, "parent nulo");
     verificar(e.getPiezasSalidas() == 0, "piezasSalidas 0");
 }
 
@@ -56,25 +56,25 @@ void testConstructorParametros() {
 
     Estado e(3, 2, 1, pos, col, lar, 0b101u, 5, 10, W, H, nullptr, "R1,2", oc);
 
-    verificar(e.getNumPiezas() == 3,          "numPiezas 3");
-    verificar(e.getNumCompuertas() == 2,      "numCompuertas 2");
-    verificar(e.getNumSalidas() == 1,         "numSalidas 1");
-    verificar(e.getStepUsed() == 5,           "stepUsed 5");
-    verificar(e.getH() == 10,                 "h 10");
-    verificar(e.getF() == 15,                 "f = g + h = 15");
+    verificar(e.getNumPiezas() == 3, "numPiezas 3");
+    verificar(e.getNumCompuertas() == 2, "numCompuertas 2");
+    verificar(e.getNumSalidas() == 1, "numSalidas 1");
+    verificar(e.getStepUsed() == 5, "stepUsed 5");
+    verificar(e.getH() == 10, "h 10");
+    verificar(e.getF() == 15, "f = g + h = 15");
     verificar(e.getPiezasSalidas() == 0b101u, "piezasSalidas correcto");
 
-    verificar(e.getPosPiezas() != pos,         "deep copy posiciones");
-    verificar(e.getPosPiezas()[0].x == 0,      "pos[0].x correcto");
-    verificar(e.getPosPiezas()[1].x == 1,      "pos[1].x correcto");
-    verificar(e.getPosPiezas()[2].y == 4,      "pos[2].y correcto");
+    verificar(e.getPosPiezas() != pos, "deep copy posiciones");
+    verificar(e.getPosPiezas()[0].x == 0, "pos[0].x correcto");
+    verificar(e.getPosPiezas()[1].x == 1, "pos[1].x correcto");
+    verificar(e.getPosPiezas()[2].y == 4,"pos[2].y correcto");
 
     verificar(e.getColorCompuertas()[0] == 10, "colorCompuertas[0]");
     verificar(e.getColorCompuertas()[1] == 20, "colorCompuertas[1]");
-    verificar(e.getLargoSalidas()[0] == 7,     "largoSalidas[0]");
+    verificar(e.getLargoSalidas()[0] == 7, "largoSalidas[0]");
 
-    verificar(e.getOcupacion() != oc,          "deep copy ocupacion");
-    verificar(e.getOcupacion()[0] == -1,       "ocupacion[0] = -1");
+    verificar(e.getOcupacion() != oc, "deep copy ocupacion");
+    verificar(e.getOcupacion()[0] == -1, "ocupacion[0] = -1");
     verificar(strcmp(e.getMovimiento(), "R1,2") == 0, "movimiento copiado");
 
     delete[] pos; delete[] col; delete[] lar; delete[] oc;
@@ -93,18 +93,18 @@ void testConstructorCopia() {
     Estado original(2, 1, 1, pos, col, lar, 0b01u, 3, 7, W, H, nullptr, "D2,1", oc);
     Estado copia(original);
 
-    verificar(copia.getNumPiezas() == original.getNumPiezas(),          "numPiezas igual");
-    verificar(copia.getStepUsed() == original.getStepUsed(),            "stepUsed igual");
-    verificar(copia.getF() == original.getF(),                          "f igual");
-    verificar(copia.getPiezasSalidas() == original.getPiezasSalidas(),  "piezasSalidas igual");
+    verificar(copia.getNumPiezas() == original.getNumPiezas(), "numPiezas igual");
+    verificar(copia.getStepUsed() == original.getStepUsed(), "stepUsed igual");
+    verificar(copia.getF() == original.getF(), "f igual");
+    verificar(copia.getPiezasSalidas() == original.getPiezasSalidas(), "piezasSalidas igual");
 
-    verificar(copia.getPosPiezas() != original.getPosPiezas(),          "pos en memoria distinta");
+    verificar(copia.getPosPiezas() != original.getPosPiezas(), "pos en memoria distinta");
     verificar(copia.getColorCompuertas() != original.getColorCompuertas(), "compuertas distintas");
-    verificar(copia.getLargoSalidas() != original.getLargoSalidas(),    "salidas en memoria distinta");
-    verificar(copia.getOcupacion() != original.getOcupacion(),          "ocupacion en memoria distinta");
+    verificar(copia.getLargoSalidas() != original.getLargoSalidas(), "salidas en memoria distinta");
+    verificar(copia.getOcupacion() != original.getOcupacion(), "ocupacion en memoria distinta");
 
     verificar(copia.getPosPiezas()[0].x == original.getPosPiezas()[0].x, "contenido pos[0] igual");
-    verificar(copia.getOcupacion()[0] == original.getOcupacion()[0],     "contenido ocupacion igual");
+    verificar(copia.getOcupacion()[0] == original.getOcupacion()[0], "contenido ocupacion igual");
 
     delete[] pos; delete[] col; delete[] lar; delete[] oc;
 }
@@ -129,9 +129,9 @@ void testOperadorAsignacion() {
 
     e2 = e1;
 
-    verificar(e2.getNumPiezas() == 1,                           "numPiezas actualizado");
-    verificar(e2.getStepUsed() == 2,                            "stepUsed actualizado");
-    verificar(e2.getPosPiezas() != e1.getPosPiezas(),           "memoria independiente");
+    verificar(e2.getNumPiezas() == 1, "numPiezas actualizado");
+    verificar(e2.getStepUsed() == 2, "stepUsed actualizado");
+    verificar(e2.getPosPiezas() != e1.getPosPiezas(), "memoria independiente");
     verificar(e2.getPosPiezas()[0].x == e1.getPosPiezas()[0].x, "contenido copiado");
 
     e1 = e1;
@@ -153,15 +153,15 @@ void testBitmask() {
 
     Estado e(4, 0, 0, pos, col, lar, 0u, 0, 0, W, H, nullptr, "", oc);
 
-    verificar(!e.piezaYaSalio(0),  "pieza 0 no salió");
-    verificar(!e.piezaYaSalio(3),  "pieza 3 no salió");
+    verificar(!e.piezaYaSalio(0), "pieza 0 no salió");
+    verificar(!e.piezaYaSalio(3), "pieza 3 no salió");
     verificar(!e.jugoTerminado(4), "juego no terminado");
 
     e.setPiezasSalidas(0b0101u);
-    verificar(e.piezaYaSalio(0),   "pieza 0 salió");
-    verificar(!e.piezaYaSalio(1),  "pieza 1 no salió");
-    verificar(e.piezaYaSalio(2),   "pieza 2 salió");
-    verificar(!e.piezaYaSalio(3),  "pieza 3 no salió");
+    verificar(e.piezaYaSalio(0), "pieza 0 salió");
+    verificar(!e.piezaYaSalio(1), "pieza 1 no salió");
+    verificar(e.piezaYaSalio(2), "pieza 2 salió");
+    verificar(!e.piezaYaSalio(3), "pieza 3 no salió");
     verificar(!e.jugoTerminado(4), "2 piezas aún no es todo");
 
     e.setPiezasSalidas(0b1111u);
@@ -189,15 +189,15 @@ void testMoverPieza() {
 
     e->moverPieza(0, 1, 0, pieza, W);
 
-    verificar(e->getPosPiezas()[0].x == 3,      "pos x actualizada");
-    verificar(e->getPosPiezas()[0].y == 2,      "pos y sin cambio");
-    verificar(e->getStepUsed() == 1,            "stepUsed incrementado");
+    verificar(e->getPosPiezas()[0].x == 3, "pos x actualizada");
+    verificar(e->getPosPiezas()[0].y == 2, "pos y sin cambio");
+    verificar(e->getStepUsed() == 1, "stepUsed incrementado");
     verificar(e->getOcupacion()[2*W + 2] == -1, "celda anterior liberada");
-    verificar(e->getOcupacion()[2*W + 3] == 0,  "nueva celda marcada");
+    verificar(e->getOcupacion()[2*W + 3] == 0, "nueva celda marcada");
 
     e->moverPieza(0, 0, -1, pieza, W);
     verificar(e->getPosPiezas()[0].y == 1, "mover arriba: pos y = 1");
-    verificar(e->getStepUsed() == 2,       "stepUsed 2 después de 2 movimientos");
+    verificar(e->getStepUsed() == 2, "stepUsed 2 después de 2 movimientos");
 
     delete e;
     delete[] pos; delete[] col; delete[] lar; delete[] oc;
@@ -222,10 +222,10 @@ void testSacarPieza() {
 
     e->sacarPieza(0, pieza, W);
 
-    verificar(e->piezaYaSalio(0),               "pieza marcada como salida");
+    verificar(e->piezaYaSalio(0), "pieza marcada como salida");
     verificar(e->getOcupacion()[1*W + 1] == -1, "celda liberada");
-    verificar(e->getStepUsed() == 0,             "stepUsed no cambia al sacar");
-    verificar(e->jugoTerminado(1),               "juego terminado");
+    verificar(e->getStepUsed() == 0, "stepUsed no cambia al sacar");
+    verificar(e->jugoTerminado(1), "juego terminado");
 
     delete e;
     delete[] pos; delete[] col; delete[] lar; delete[] oc;
@@ -250,11 +250,11 @@ void testClonarYMover() {
 
     Estado* clon = base->clonarYMover(0, 1, 0, pieza, W);
 
-    verificar(clon->getPosPiezas()[0].x == 2,  "clon movido a x=2");
-    verificar(base->getPosPiezas()[0].x == 1,  "base sin cambios");
-    verificar(clon->getStepUsed() == 1,        "clon stepUsed=1");
-    verificar(base->getStepUsed() == 0,        "base stepUsed=0");
-    verificar(clon != base,                    "son objetos distintos");
+    verificar(clon->getPosPiezas()[0].x == 2,"clon movido a x=2");
+    verificar(base->getPosPiezas()[0].x == 1, "base sin cambios");
+    verificar(clon->getStepUsed() == 1, "clon stepUsed=1");
+    verificar(base->getStepUsed() == 0, "base stepUsed=0");
+    verificar(clon != base, "son objetos distintos");
     verificar(clon->getOcupacion() != base->getOcupacion(), "ocupacion independiente");
 
     delete base;

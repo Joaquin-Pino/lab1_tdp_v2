@@ -34,7 +34,7 @@ int main() {
     std::cout << "\n-- básico --" << std::endl;
     {
         MinHeap h(10);
-        verificar(h.estaVacio(),    "vacío al inicio");
+        verificar(h.estaVacio(), "vacío al inicio");
         verificar(h.getTamano()==0, "tamaño 0 al inicio");
 
         Estado* e1 = crearEstado(5);
@@ -45,7 +45,7 @@ int main() {
         h.push(e2);
         h.push(e3);
 
-        verificar(!h.estaVacio(),   "no vacío después de push");
+        verificar(!h.estaVacio(), "no vacío después de push");
         verificar(h.getTamano()==3, "tamaño 3 después de 3 pushes");
 
         Estado* p1 = h.pop();

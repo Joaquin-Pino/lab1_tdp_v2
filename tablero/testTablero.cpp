@@ -31,11 +31,11 @@ Tablero* hacerTableroSimple() {
     mat[1 * W + 4] = {SALIDA, 0};
 
     bool* g = new bool[1]{true};
-    Pieza* piezas   = new Pieza[1];
-    piezas[0]       = Pieza(0, 1, 1, 'a', {1, 1}, g);
+    Pieza* piezas  = new Pieza[1];
+    piezas[0] = Pieza(0, 1, 1, 'a', {1, 1}, g);
 
-    Salida* salidas  = new Salida[1];
-    salidas[0]       = Salida(0, 'a', {4, 1}, false, 2, 2, 0);
+    Salida* salidas = new Salida[1];
+    salidas[0] = Salida(0, 'a', {4, 1}, false, 2, 2, 0);
 
     Compuerta* comp  = new Compuerta[0];
 
@@ -48,15 +48,15 @@ void testGetters() {
 
     Tablero* t = hacerTableroSimple();
 
-    verificar(t->getW() == 5,          "W = 5");
-    verificar(t->getH() == 5,          "H = 5");
+    verificar(t->getW() == 5, "W = 5");
+    verificar(t->getH() == 5, "H = 5");
     verificar(t->getStepLimit() == 20, "stepLimit = 20");
     verificar(t->getNumPiezas() == 1,  "1 pieza");
     verificar(t->getNumSalidas() == 1, "1 salida");
     verificar(t->getNumCompuertas() == 0, "0 compuertas");
 
     celda* m = t->getMatriz();
-    verificar(m[0].tipo == PARED,      "esquina (0,0) es PARED");
+    verificar(m[0].tipo == PARED, "esquina (0,0) es PARED");
     verificar(m[1*5+1].tipo == VACIA,  "interior (1,1) es VACIA");
     verificar(m[1*5+4].tipo == SALIDA, "celda (1,4) es SALIDA");
 
@@ -70,16 +70,16 @@ void testCrearEstadoInicial() {
     Tablero* t = hacerTableroSimple();
     Estado* e = t->crearEstadoInicial();
 
-    verificar(e != nullptr,                "estado no es null");
+    verificar(e != nullptr, "estado no es null");
     verificar(e->getPosPiezas()[0].x == 1, "pos x = 1");
     verificar(e->getPosPiezas()[0].y == 1, "pos y = 1");
-    verificar(e->getStepUsed() == 0,       "stepUsed = 0");
-    verificar(e->getPiezasSalidas() == 0,  "ninguna pieza salió");
-    verificar(!e->jugoTerminado(1),        "juego no terminado");
+    verificar(e->getStepUsed() == 0, "stepUsed = 0");
+    verificar(e->getPiezasSalidas() == 0, "ninguna pieza salió");
+    verificar(!e->jugoTerminado(1),  "juego no terminado");
 
     // ocupacion correcta
     verificar(e->getOcupacion()[1*5 + 1] == 0, "ocupacion (1,1) = 0");
-    verificar(e->getOcupacion()[0] == -1,       "ocupacion (0,0) = -1");
+    verificar(e->getOcupacion()[0] == -1, "ocupacion (0,0) = -1");
 
     delete e;
     delete t;
@@ -93,10 +93,10 @@ void testPiezaPuedeMoverse() {
     Estado* e = t->crearEstadoInicial();  // pieza en (1,1)
 
     // paredes en fila 0 y columna 0
-    verificar(!t->piezaPuedeMoverse(0, ARRIBA,    *e), "bloqueada por pared arriba");
+    verificar(!t->piezaPuedeMoverse(0, ARRIBA,*e), "bloqueada por pared arriba");
     verificar(!t->piezaPuedeMoverse(0, IZQUIERDA, *e), "bloqueada por pared izquierda");
-    verificar( t->piezaPuedeMoverse(0, DERECHA,   *e), "puede moverse derecha");
-    verificar( t->piezaPuedeMoverse(0, ABAJO,     *e), "puede moverse abajo");
+    verificar( t->piezaPuedeMoverse(0, DERECHA, *e), "puede moverse derecha");
+    verificar( t->piezaPuedeMoverse(0, ABAJO, *e), "puede moverse abajo");
 
     delete e;
     delete t;
@@ -125,10 +125,10 @@ void testColisionEntrePiezas() {
     Estado* e = t.crearEstadoInicial();
 
     // piezas adyacentes en fila 2
-    verificar(!t.piezaPuedeMoverse(0, DERECHA,   *e), "pieza 0 bloqueada a la derecha por pieza 1");
+    verificar(!t.piezaPuedeMoverse(0, DERECHA, *e), "pieza 0 bloqueada a la derecha por pieza 1");
     verificar(!t.piezaPuedeMoverse(1, IZQUIERDA, *e), "pieza 1 bloqueada a la izquierda por pieza 0");
-    verificar( t.piezaPuedeMoverse(0, ABAJO,     *e), "pieza 0 puede moverse abajo");
-    verificar( t.piezaPuedeMoverse(1, ARRIBA,    *e), "pieza 1 puede moverse arriba");
+    verificar( t.piezaPuedeMoverse(0, ABAJO, *e), "pieza 0 puede moverse abajo");
+    verificar( t.piezaPuedeMoverse(1, ARRIBA, *e), "pieza 1 puede moverse arriba");
 
     delete e;
 }
@@ -164,9 +164,9 @@ void testCalcularLargoSalida() {
 
     bool* g = new bool[1]{true};
     Pieza* piezas  = new Pieza[1];
-    piezas[0]      = Pieza(0, 1, 1, 'a', {1, 1}, g);
+    piezas[0] = Pieza(0, 1, 1, 'a', {1, 1}, g);
     Salida* salidas = new Salida[1];
-    salidas[0]      = Salida(0, 'a', {4, 1}, false, 1, 3, 1);
+    salidas[0] = Salida(0, 'a', {4, 1}, false, 1, 3, 1);
     Compuerta* comp = new Compuerta[0];
 
     Tablero t(mat, piezas, salidas, comp, 1, 1, 0, W, H, 50);
@@ -195,11 +195,11 @@ void testCalcularColorCompuerta() {
     mat[2*W+2] = {COMPUERTA, 0};
 
     bool* g = new bool[1]{true};
-    Pieza*     piezas = new Pieza[1];
-    piezas[0]         = Pieza(0, 1, 1, 'a', {1, 1}, g);
-    Salida*    salidas = new Salida[0];
+    Pieza*  piezas = new Pieza[1];
+    piezas[0] = Pieza(0, 1, 1, 'a', {1, 1}, g);
+    Salida*  salidas = new Salida[0];
     Compuerta* comp   = new Compuerta[1];
-    comp[0]            = Compuerta(0, {2, 2}, 2, true, 'a', 'b', 1);
+    comp[0]  = Compuerta(0, {2, 2}, 2, true, 'a', 'b', 1);
 
     Tablero t(mat, piezas, salidas, comp, 1, 0, 1, W, H, 50);
     Estado* e = t.crearEstadoInicial();
@@ -224,12 +224,12 @@ void testConstructorCopia() {
     Tablero* original = hacerTableroSimple();
     Tablero copia(*original);
 
-    verificar(copia.getW()          == original->getW(),          "W igual");
-    verificar(copia.getH()          == original->getH(),          "H igual");
-    verificar(copia.getStepLimit()  == original->getStepLimit(),  "stepLimit igual");
-    verificar(copia.getNumPiezas()  == original->getNumPiezas(),  "numPiezas igual");
-    verificar(copia.getMatriz()     != original->getMatriz(),     "matriz independiente");
-    verificar(copia.getPiezas()     != original->getPiezas(),     "piezas independientes");
+    verificar(copia.getW() == original->getW(), "W igual");
+    verificar(copia.getH() == original->getH(), "H igual");
+    verificar(copia.getStepLimit() == original->getStepLimit(), "stepLimit igual");
+    verificar(copia.getNumPiezas() == original->getNumPiezas(), "numPiezas igual");
+    verificar(copia.getMatriz() != original->getMatriz(), "matriz independiente");
+    verificar(copia.getPiezas() != original->getPiezas(), "piezas independientes");
 
     delete original;
 

@@ -63,9 +63,9 @@ int main() {
         coordenada pos = {1, 1};
         Compuerta c(2, pos, 2, true, 'z', 'z', 0);
 
-        verificar(c.getCi() == c.getCf(),       "ci == cf");
-        verificar(c.aceptaBloque('z', 1, 'z'),  "pieza 1 pasa por compuerta 2");
-        verificar(c.aceptaBloque('z', 2, 'z'),  "pieza 2 pasa exacta");
+        verificar(c.getCi() == c.getCf(), "ci == cf");
+        verificar(c.aceptaBloque('z', 1, 'z'), "pieza 1 pasa por compuerta 2");
+        verificar(c.aceptaBloque('z', 2, 'z'), "pieza 2 pasa exacta");
         verificar(!c.aceptaBloque('z', 3, 'z'), "pieza 3 no pasa");
     }
 
@@ -75,9 +75,9 @@ int main() {
         coordenada pos = {0, 0};
         Compuerta c(3, pos, 5, true, 'a', 'b', 1);
 
-        verificar(c.aceptaBloque('a', 3, 'a'),  "color 'a' pasa con actual 'a'");
+        verificar(c.aceptaBloque('a', 3, 'a'), "color 'a' pasa con actual 'a'");
         verificar(!c.aceptaBloque('b', 3, 'a'), "color 'b' no pasa con actual 'a'");
-        verificar(c.aceptaBloque('b', 3, 'b'),  "color 'b' pasa con actual 'b'");
+        verificar(c.aceptaBloque('b', 3, 'b'), "color 'b' pasa con actual 'b'");
         verificar(!c.aceptaBloque('a', 3, 'b'), "color 'a' no pasa con actual 'b'");
     }
 
