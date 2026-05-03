@@ -18,23 +18,24 @@ void menuPrincipal() {
 }
 
 int main() {
-    Tablero* tablero  = nullptr;
+    Tablero* tablero       = nullptr;
     Estado*  estadoInicial = nullptr;
-    Estado** solucion = nullptr;
+    Estado** solucion      = nullptr; // arreglo terminado en nullptr; cada elemento es un Estado*
     char     nombreArchivo[256];
 
     int opcion = 0;
 
     while (opcion != 6) {
         menuPrincipal();
-        std::cin >> opcion; // TODO: validar input, si se ingresa string se rompe
-        
+        std::cin >> opcion; // TODO: validar input — si se ingresa un string, cin queda en mal estado
+
         switch (opcion) {
             case 1: {
                 std::cout << "Ingrese el nombre del archivo: ";
                 std::cin >> nombreArchivo;
 
-                // limpiar estado anterior
+                // Liberar los objetos del mapa anterior antes de cargar uno nuevo,
+                // para no perder las referencias a la memoria ya asignada.
                 delete tablero;
                 delete estadoInicial;
                 if (solucion) {
@@ -65,27 +66,25 @@ int main() {
                     break;
                 }
 
+                // Liberar la solución anterior si existía.
                 if (solucion) {
                     for (int i = 0; solucion[i] != nullptr; i++) delete solucion[i];
                     delete[] solucion;
+                    solucion = nullptr;
                 }
-                solucion = nullptr;
 
                 std::cout << "Resolviendo..." << std::endl;
 
-                // medir tiempo
                 clock_t inicio = clock();
 
                 Solver solver(tablero);
+                // El Solver toma ownership del estado que recibe; pasamos una copia
+                // para preservar estadoInicial y poder seguir usándolo (mostrar, verificar).
                 Estado* estadoCopia = new Estado(*estadoInicial);
-
-                
                 solucion = solver.resolver(estadoCopia);
-                
-                
 
-                clock_t fin = clock();
-                double tiempoMs = (double)(fin - inicio) / CLOCKS_PER_SEC * 1000.0;
+                clock_t fin    = clock();
+                double  tiempoMs = (double)(fin - inicio) / CLOCKS_PER_SEC * 1000.0;
 
                 if (solucion) {
                     std::cout << "Solucion encontrada." << std::endl;
@@ -150,6 +149,7 @@ int main() {
         }
     }
 
+    // Liberar toda la memoria antes de terminar.
     delete tablero;
     delete estadoInicial;
     if (solucion) {
