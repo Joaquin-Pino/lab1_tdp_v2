@@ -31,6 +31,8 @@ short Compuerta::getPaso() const {
 
 bool Compuerta::aceptaBloque(int colorBloque, int tamanoBloque, int colorActual) const {
     if (colorBloque != colorActual) return false;
+    // El tamaño importa porque la compuerta tiene una apertura fija;
+    // una pieza más grande físicamente no cabe aunque sea del color correcto.
     return tamanoBloque <= tamano;
 }
 

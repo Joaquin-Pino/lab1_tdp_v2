@@ -11,23 +11,25 @@ void Impresora::imprimirEstado(const Tablero& tablero, const Estado& estado) {
     int w = tablero.getW();
     int h = tablero.getH();
 
+    // Trabajamos sobre una copia de la matriz estática para no alterar el Tablero original.
     celda* matriz = tablero.getCopiaMatriz();
     Pieza*  piezas  = tablero.getPiezas();
     Salida* salidas = tablero.getSalidas();
 
-    // limpiar celdas de salida de la copia — se remarcarán con largo actual
+    // Las salidas en la copia reflejan su largo inicial (del archivo de mapa).
+    // Las borramos para redibujarlas con el largo actual del estado,
+    // ya que pueden haberse expandido o contraído según stepUsed.
     for (int i = 0; i < w * h; i++) {
         if (matriz[i].tipo == SALIDA)
             matriz[i] = {VACIA, -1};
     }
 
-    // marcar salidas con largo actual del estado
     for (int id = 0; id < tablero.getNumSalidas(); id++) {
         int largo = tablero.calcularLargoSalida(id, estado);
         Salida& s = salidas[id];
         for (int j = 0; j < largo; j++) {
-            int fila    = s.getPos().y + (s.getEsHorizontal() ? 0 : j);  // vertical: y + j
-            int columna = s.getPos().x + (s.getEsHorizontal() ? j : 0);  // vertical: x + 0
+            int fila    = s.getPos().y + (s.getEsHorizontal() ? 0 : j);
+            int columna = s.getPos().x + (s.getEsHorizontal() ? j : 0);
             if (fila >= 0 && fila < h && columna >= 0 && columna < w) {
                 matriz[fila * w + columna].tipo = SALIDA;
                 matriz[fila * w + columna].id   = id;
@@ -35,7 +37,7 @@ void Impresora::imprimirEstado(const Tablero& tablero, const Estado& estado) {
         }
     }
 
-    // colocar piezas en sus posiciones del estado
+    // Las piezas salidas no se renderizan; el resto se superpone sobre la matriz.
     for (int i = 0; i < tablero.getNumPiezas(); i++) {
         if (estado.piezaYaSalio(i)) continue;
         int x = estado.getPosPiezas()[i].x;
@@ -90,8 +92,10 @@ void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
         return;
     }
 
-    // string de solución, consolidando movimientos consecutivos
-    // de la misma pieza en la misma direccion
+    // El solver genera movimientos de 1 celda por paso.
+    // Aquí se consolidan los movimientos consecutivos de la misma pieza en la misma dirección
+    // en un único token (ej: R5,1 R5,1 R5,1 → R5,3), lo que reduce el largo del string de salida
+    // y es el formato esperado por el Verificador.
     std::cout << "Solución: ";
 
     char dirAcum = 0;
@@ -100,6 +104,7 @@ void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
     for (int i = 1; i < numPasos; i++) {
         const char* mov = solucion[i]->getMovimiento();
         if (mov[0] == 'S') {
+            // Salida interrumpe la acumulación del slide anterior
             if (countAcum > 0) {
                 std::cout << dirAcum << piezaAcum << "," << countAcum;
                 countAcum = 0;
@@ -123,17 +128,15 @@ void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
         if (dir == dirAcum && pieza == piezaAcum) {
             countAcum += dist;
         } else {
-            if (countAcum > 0) {
+            if (countAcum > 0)
                 std::cout << dirAcum << piezaAcum << "," << countAcum;
-            }
             dirAcum = dir;
             piezaAcum = pieza;
             countAcum = dist;
         }
     }
-    if (countAcum > 0) {
+    if (countAcum > 0)
         std::cout << dirAcum << piezaAcum << "," << countAcum;
-    }
     std::cout << std::endl;
 }
 

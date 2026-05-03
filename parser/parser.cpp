@@ -17,8 +17,8 @@ Parser::Parser(const char* nombreArchivo)
 
 Parser::~Parser() {
     if (archivo) fclose(archivo);
-    // solo liberar si construirTablero no fue llamado
-    // construirTablero transfiere ownership al Tablero
+    // construirTablero() pone estos punteros en nullptr al transferirlos al Tablero,
+    // así que delete[] nullptr es no-op y no hay doble liberación.
     delete[] matriz;
     delete[] piezas;
     delete[] salidas;
@@ -42,7 +42,9 @@ bool Parser::esSeccion(const char* nombre) {
 void Parser::parsearMeta() {
     while (leerLinea()) {
         if (lineaActual[0] == '[') {
-            tieneLineaPendiente = true;  // guardar para el loop principal
+            // Encontramos el encabezado de la siguiente sección.
+            // Lo "devolvemos" para que construirTablero() lo despache correctamente.
+            tieneLineaPendiente = true;
             return;
         }
         char clave[64], valor[64];
@@ -72,15 +74,15 @@ void Parser::parsearWall() {
 }
 
 void Parser::parsearBloques() {
-    // arreglo temporal máximo razonable
     const int MAX_TEMP = 100;
     Pieza temp[MAX_TEMP];
     numPiezas = 0;
 
     while (leerLinea()) {
         if (lineaActual[0] == '[') {
-            // guardar esta línea para que construirTablero la procese
-            // reposicionar antes de la sección
+            // El encabezado de la siguiente sección fue consumido por leerLinea().
+            // Como no tenemos un mecanismo de "unget" de línea completa aquí,
+            // retrocedemos el cursor del archivo para que construirTablero() la vea.
             fseek(archivo, -(long)(strlen(lineaActual)+1), SEEK_CUR);
             break;
         }
@@ -92,34 +94,30 @@ void Parser::parsearBloques() {
         if (sscanf(lineaActual, "%d COLOR=%c WIDTH=%d HEIGHT=%d INIT_X=%d INIT_Y=%d",
                    &id, &colorChar, &bw, &bh, &initX, &initY) != 6) continue;
 
-       
-        
         bool* geom = new bool[bw * bh];
         char* ptr = strstr(lineaActual, "GEOMETRY=");
-        
         if (ptr) {
             ptr += strlen("GEOMETRY=");
-            
             for (int k = 0; k < bw * bh; k++) {
                 while (*ptr == ' ') ptr++;
                 geom[k] = (*ptr == '1');
                 ptr++;
             }
         }
-        
+
         coordenada pos = {initX, initY};
         temp[numPiezas] = Pieza(id, (short)bw, (short)bh, (int)colorChar, pos, geom);
-
         numPiezas++;
     }
-    
+
     piezas = new Pieza[numPiezas];
     for (int i = 0; i < numPiezas; i++)
         piezas[i] = temp[i];
 }
 
 void Parser::parsearSalidas() {
-    // primera pasada: contar
+    // Dos pasadas sobre la sección: primero contar para asignar el arreglo exacto,
+    // luego leer de nuevo para construir los objetos. Esto evita reallocs o un MAX_TEMP fijo.
     long posInicio = ftell(archivo);
     numSalidas = 0;
 
@@ -209,12 +207,12 @@ Tablero* Parser::construirTablero() {
         else if (esSeccion("[GATE]"))   parsearCompuertas();
     }
 
-    // transferir ownership al Tablero
     Tablero* t = new Tablero(matriz, piezas, salidas, compuertas,
                               numPiezas, numSalidas, numCompuertas,
                               w, h, stepLimit);
 
-    // nullificar para que el destructor del Parser no libere
+    // Transferir ownership: el Tablero ahora es responsable de liberar estos arreglos.
+    // Ponemos los punteros en nullptr para que el destructor del Parser no los libere dos veces.
     matriz     = nullptr;
     piezas     = nullptr;
     salidas    = nullptr;

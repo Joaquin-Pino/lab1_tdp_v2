@@ -25,8 +25,7 @@ MinHeap& MinHeap::operator=(const MinHeap& otro) {
 }
 
 MinHeap::~MinHeap() {
-    delete[] heap;
-    // no liberar los Estado* — son propiedad del Solver
+    delete[] heap; // solo el arreglo de punteros; los Estado* son del Solver
 }
 
 void MinHeap::siftUp(int i) {
@@ -63,7 +62,9 @@ void MinHeap::siftDown(int i) {
 
 void MinHeap::push(Estado* e) {
     if (tamano >= capacidad) {
-        // duplicar capacidad
+        // Duplicar capacidad para mantener inserción amortizada O(1).
+        // A* puede encolar cientos de miles de estados, así que evitamos
+        // reallocations frecuentes a costa de pico de memoria 2×.
         capacidad *= 2;
         Estado** nuevo = new Estado*[capacidad];
         for (int i = 0; i < tamano; i++)
@@ -77,8 +78,10 @@ void MinHeap::push(Estado* e) {
 
 Estado* MinHeap::pop() {
     if (estaVacio()) return nullptr;
-    Estado* min  = heap[0];
-    heap[0]      = heap[--tamano];
+    Estado* min = heap[0];
+    // Mover el último elemento a la raíz y bajar para restaurar el heap.
+    // Esta es la operación estándar de pop en un heap binario: O(log n).
+    heap[0] = heap[--tamano];
     if (tamano > 0) siftDown(0);
     return min;
 }

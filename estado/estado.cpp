@@ -36,32 +36,31 @@ Estado::Estado(int numPiezas, int numCompuertas, int numSalidas,
         this->ocupacion[i] = ocupacion[i];
 }
 
-Estado::Estado(const Estado& otro) : numPiezas(otro.numPiezas), numCompuertas(otro.numCompuertas), 
-        numSalidas(otro.numSalidas), piezasSalidas(otro.piezasSalidas), stepUsed(otro.stepUsed), 
+Estado::Estado(const Estado& otro) : numPiezas(otro.numPiezas), numCompuertas(otro.numCompuertas),
+        numSalidas(otro.numSalidas), piezasSalidas(otro.piezasSalidas), stepUsed(otro.stepUsed),
         f(otro.f), h(otro.h), width(otro.width), height(otro.height), parent(otro.parent) {
-    // Copiar los arreglos, sin usar std::copy
 
     posPiezas = new coordenada[numPiezas];
-    for (int i = 0; i < numPiezas; ++i) {
+    for (int i = 0; i < numPiezas; ++i)
         posPiezas[i] = otro.posPiezas[i];
-    }   
+
     colorCompuertas = new int[numCompuertas];
-    for (int i = 0; i < numCompuertas; ++i) {
+    for (int i = 0; i < numCompuertas; ++i)
         colorCompuertas[i] = otro.colorCompuertas[i];
-    }
-    
+
     largoSalidas = new short[numSalidas];
-    for (int i = 0; i < numSalidas; ++i) {
+    for (int i = 0; i < numSalidas; ++i)
         largoSalidas[i] = otro.largoSalidas[i];
-    }
-    
+
     memcpy(movimiento, otro.movimiento, 9);
     movimiento[9] = '\0';
 
+    // ocupacion puede ser nullptr si el estado fuente ya fue insertado en closedSet
+    // y se le liberó con eliminarOcupacion(); el clon hereda ese nullptr.
     if (otro.ocupacion) {
-    ocupacion = new short[width * height];
-    for (int i = 0; i < width * height; i++)
-        ocupacion[i] = otro.ocupacion[i];
+        ocupacion = new short[width * height];
+        for (int i = 0; i < width * height; i++)
+            ocupacion[i] = otro.ocupacion[i];
     } else {
         ocupacion = nullptr;
     }
@@ -131,16 +130,21 @@ bool Estado::piezaYaSalio(int idPieza) const {
 }
 
 bool Estado::jugoTerminado(int numPiezas) const {
-    return piezasSalidas == (1U << numPiezas) - 1; // todas las piezas han salido
+    // (1U << n) - 1 produce un bitmask con los n bits bajos en 1,
+    // que es exactamente el valor cuando todas las n piezas han salido.
+    return piezasSalidas == (1U << numPiezas) - 1;
 }
 
 unsigned int Estado::generarHash() const {
     unsigned int hash = 0;
 
+    // Se mezclan primos grandes distintos para cada campo y posición,
+    // de modo que dos estados que solo difieren en una pieza produzcan hashes muy distintos
+    // y las colisiones en la TablaHash se mantengan bajas.
     for (int i = 0; i < numPiezas; i++) {
         hash ^= (unsigned int)(posPiezas[i].x * 73856093)
               ^ (unsigned int)(posPiezas[i].y * 19349663)
-              ^ (unsigned int)(i * 83492791);  // el índice diferencia cada pieza
+              ^ (unsigned int)(i * 83492791);  // el índice diferencia piezas en misma posición
     }
 
     for (int i = 0; i < numCompuertas; i++) {
@@ -224,7 +228,8 @@ short* Estado::getOcupacion() const {
 void Estado::moverPieza(int id, int dx, int dy, const Pieza& pieza, int w) {
     coordenada& pos = posPiezas[id];
 
-    // limpiar ocupacion anterior
+    // Limpiar primero la posición vieja antes de actualizar pos,
+    // para que el cálculo de índices siga siendo correcto.
     for (int i = 0; i < pieza.getAlto(); i++) {
         for (int j = 0; j < pieza.getAncho(); j++) {
             if (!pieza.getCelda(j, i)) continue;
@@ -232,11 +237,9 @@ void Estado::moverPieza(int id, int dx, int dy, const Pieza& pieza, int w) {
         }
     }
 
-    // aplicar movimiento
     pos.x += dx;
     pos.y += dy;
 
-    // marcar nueva ocupacion
     for (int i = 0; i < pieza.getAlto(); i++) {
         for (int j = 0; j < pieza.getAncho(); j++) {
             if (!pieza.getCelda(j, i)) continue;
