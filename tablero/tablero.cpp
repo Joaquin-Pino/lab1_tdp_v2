@@ -112,14 +112,14 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
             if (!pieza.getCelda(j, i)) continue;
 
             // Calcular la celda destino en la dirección deseada.
-            int fila    = pos.y + i;
+            int fila = pos.y + i;
             int columna = pos.x + j;
 
             switch (dir) {
-                case ARRIBA:    fila--;    break;
-                case ABAJO:     fila++;    break;
+                case ARRIBA: fila--; break;
+                case ABAJO: fila++; break;
                 case IZQUIERDA: columna--; break;
-                case DERECHA:   columna++; break;
+                case DERECHA: columna++; break;
             }
 
             // Si la celda destino sale del tablero, el movimiento es inválido.
@@ -149,10 +149,10 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
                     colorActual = cp.getCi();
                 } else {
                     // Calcular en qué punto del ciclo estará la compuerta tras el movimiento.
-                    int ciclo    = cp.getCf() - cp.getCi() + 1;
+                    int ciclo = cp.getCf() - cp.getCi() + 1;
                     int pasoEval = estado.getStepUsed() + 1;
-                    int pc       = pasoEval / cp.getPaso();
-                    colorActual  = cp.getCi() + (pc % ciclo);
+                    int pc = pasoEval / cp.getPaso();
+                    colorActual = cp.getCi() + (pc % ciclo);
                 }
                 // El tamaño relevante es la dimensión perpendicular a la dirección de movimiento:
                 // movimiento vertical → la pieza debe caber en ancho; horizontal → en alto.
@@ -174,8 +174,10 @@ bool Tablero::piezaPuedeSalir(int id, const Estado& estado) {
     // Revisar la celda inmediatamente por encima de cada celda de la fila superior de la pieza.
     for (int j = 0; j < pieza.getAncho(); j++) {
         if (!pieza.getCelda(j, 0)) continue; // celda no forma parte de la pieza
-        int fila    = pos.y - 1;             // fila justo encima de la pieza
+        
+        int fila = pos.y - 1;   // fila justo encima de la pieza
         int columna = pos.x + j;
+        
         if (fila >= 0 && fila < h && columna >= 0 && columna < w)
             if (esSalidaValida(fila, columna, pieza, estado)) return true;
     }
@@ -237,7 +239,7 @@ int Tablero::calcularColorCompuerta(int idx, const Estado& estado) {
     if (c.getPaso() == 0) return c.getCi(); // compuerta estática
 
     // El color avanza un nivel por cada `paso` steps, ciclando entre Ci y Cf.
-    int ciclo      = c.getCf() - c.getCi() + 1;
+    int ciclo = c.getCf() - c.getCi() + 1;
     int pasosCiclo = estado.getStepUsed() / c.getPaso();
     return c.getCi() + (pasosCiclo % ciclo);
 }
@@ -249,9 +251,9 @@ int Tablero::calcularLargoSalida(int idx, const Estado& estado) const {
     // El largo oscila entre Li y Lf en forma de onda triangular:
     // crece de Li a Lf en `rango` pasos, luego vuelve de Lf a Li en otros `rango` pasos.
     // `pos` es la posición dentro del ciclo completo de ida y vuelta (2 * rango pasos).
-    int rango      = s.getLf() - s.getLi();
+    int rango = s.getLf() - s.getLi();
     int pasosCiclo = estado.getStepUsed() / s.getPaso();
-    int pos        = pasosCiclo % (2 * rango);
+    int pos = pasosCiclo % (2 * rango);
 
     if (pos <= rango)
         return s.getLi() + pos;          // fase de crecimiento

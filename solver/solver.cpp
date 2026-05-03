@@ -8,9 +8,9 @@ Solver::Solver(Tablero* t)
     int maxDim  = (t->getW() > t->getH()) ? t->getW() : t->getH();
     // En el peor caso, cada pieza puede salir (1 opción) o moverse en 4 direcciones
     // hasta el borde del tablero (maxDim pasos). Multiplicamos por el número de piezas.
-    maxVecinos  = t->getNumPiezas() * (4 * maxDim + 1);
-    openSet     = new MinHeap(1024);
-    closedSet   = new TablaHash(100003); // primo grande para distribuir bien los hashes iniciales
+    maxVecinos = t->getNumPiezas() * (4 * maxDim + 1);
+    openSet = new MinHeap(1024);
+    closedSet = new TablaHash(100003); // primo grande para distribuir bien los hashes iniciales
     vecinosTemp = new Estado*[maxVecinos];
 }
 
@@ -26,27 +26,6 @@ Solver::~Solver() {
     delete openSet;
     delete closedSet;
     delete[] vecinosTemp;
-}
-
-bool Solver::esMovimientoRedundante(int idPieza, char dir, const Estado* actual) const {
-    const char* prev = actual->getMovimiento();
-    // Si no hay movimiento previo o fue una salida, no hay nada que deshacer.
-    if (prev[0] == '\0' || prev[0] == 'S') return false;
-
-    char prevDir     = prev[0];
-    int  prevPiezaId = -1;
-    sscanf(prev + 1, "%d", &prevPiezaId); // leer el id de pieza del movimiento anterior
-
-    // Si el movimiento previo fue de otra pieza, no es redundante para esta.
-    Pieza& pieza = tablero->getPiezas()[idPieza];
-    if (pieza.getId() != prevPiezaId) return false;
-
-    // Si la dirección nueva es exactamente la opuesta a la anterior, el movimiento
-    // regresaría al estado padre, que ya está en closedSet o pendiente de evaluar.
-    if ((dir == 'U' && prevDir == 'D') || (dir == 'D' && prevDir == 'U') ||
-        (dir == 'L' && prevDir == 'R') || (dir == 'R' && prevDir == 'L')) return true;
-
-    return false;
 }
 
 void Solver::prepararVecino(Estado* vecino, Estado* actual, char mov[10]) const {
@@ -76,10 +55,10 @@ int Solver::generarVecinos(Estado* actual) {
     Pieza* piezas   = tablero->getPiezas();
 
     // Tablas paralelas de las 4 direcciones para evitar repetir el switch en cada iteración.
-    direccion dirs[4]    = {ARRIBA, ABAJO, IZQUIERDA, DERECHA};
-    int       dx[4]      = { 0,  0, -1,  1};
-    int       dy[4]      = {-1,  1,  0,  0};
-    char      dirChar[4] = {'U', 'D', 'L', 'R'};
+    direccion dirs[4] = {ARRIBA, ABAJO, IZQUIERDA, DERECHA};
+    int dx[4] = { 0,  0, -1,  1};
+    int  dy[4] = {-1,  1,  0,  0};
+    char dirChar[4] = {'U', 'D', 'L', 'R'};
 
     for (int id = 0; id < numPiezas; id++) {
         if (actual->piezaYaSalio(id)) continue; // pieza ya fuera del tablero, ignorar
@@ -232,11 +211,17 @@ int Solver::calcularHeuristica(const Estado& estado) const {
             // Calcular la distancia Manhattan desde el BORDE de la pieza hasta la salida,
             // no desde su centro. Si la salida está dentro del bounding box, la distancia es 0.
             int dx = 0, dy = 0;
-            if      (ps.x < pos.x)       dx = pos.x - ps.x;           // salida a la izquierda
-            else if (ps.x > pos.x+pw-1)  dx = ps.x - (pos.x + pw-1); // salida a la derecha
+            if  (ps.x < pos.x) {      
+                dx = pos.x - ps.x;// salida a la izquierda
+            } else if (ps.x > pos.x+pw-1)  {
+                dx = ps.x - (pos.x + pw-1); // salida a la derecha
+            }
 
-            if      (ps.y < pos.y)       dy = pos.y - ps.y;           // salida arriba
-            else if (ps.y > pos.y+ph-1)  dy = ps.y - (pos.y + ph-1); // salida abajo
+            if (ps.y < pos.y) {
+                dy = pos.y - ps.y;  // salida arriba
+            } else if (ps.y > pos.y+ph-1)  {
+                dy = ps.y - (pos.y + ph-1); // salida abajo
+            }
 
             int dist = dx + dy;
 
@@ -268,8 +253,10 @@ int Solver::contarBloqueos(int idPieza, coordenada pos,
     int mejorDist = -1;
     for (int j = 0; j < tablero->getNumSalidas(); j++) {
         Salida& salida = tablero->getSalidas()[j];
+        
         if (salida.getColor() != pieza.getColor()) continue;
         if (!tablero->piezaPodriaSalir(pieza, salida)) continue;
+        
         int d = abs(pos.x - salida.getPos().x) + abs(pos.y - salida.getPos().y);
         if (mejorDist == -1 || d < mejorDist) {
             mejorDist  = d;
@@ -282,9 +269,9 @@ int Solver::contarBloqueos(int idPieza, coordenada pos,
 
 int Solver::contarBloqueos(int idPieza, coordenada pos, coordenada posSalida,
                              const Estado& estado) const {
-    int    w        = tablero->getW();
+    int w = tablero->getW();
     short* ocupacion = estado.getOcupacion();
-    celda* matriz   = tablero->getMatriz();
+    celda* matriz = tablero->getMatriz();
 
     // Camino 1: ir primero en horizontal hasta posSalida.x, luego en vertical hasta posSalida.y.
     int bloqueosHorizPrimero = 0;

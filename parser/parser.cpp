@@ -15,6 +15,7 @@ Parser::Parser(const char* nombreArchivo)
         std::cerr << "Error: no se pudo abrir el archivo " << nombreArchivo << std::endl;
 }
 
+// El destructor libera la memoria de los arreglos, pero no de los objetos individuales,
 Parser::~Parser() {
     if (archivo) fclose(archivo);
     // construirTablero() pone estos punteros en nullptr al transferirlos al Tablero,
@@ -25,9 +26,16 @@ Parser::~Parser() {
     delete[] compuertas;
 }
 
+// Lee una línea del archivo y la almacena en lineaActual, eliminando el salto de línea.
+// Retorna true si se leyó una línea, false si se llegó al final del archivo
 bool Parser::leerLinea() {
     if (!archivo) return false;
-    if (fgets(lineaActual, 256, archivo) == nullptr) return false;
+
+    // fgets incluye el salto de línea, así que lo eliminamos para facilitar el procesamiento.
+    // Si la línea es demasiado larga, se truncará, pero asumimos que 256 caracteres son suficientes para nuestras líneas de configuración.
+    if (fgets(lineaActual, 256, archivo) == nullptr) {
+        return false;
+    }
     // eliminar salto de línea al final
     int len = strlen(lineaActual);
     if (len > 0 && lineaActual[len-1] == '\n')
@@ -39,23 +47,30 @@ bool Parser::esSeccion(const char* nombre) {
     return strncmp(lineaActual, nombre, strlen(nombre)) == 0;
 }
 
+// Cada función de parseo de sección asume que la línea actual es el encabezado de esa sección
+// y lee líneas hasta encontrar el siguiente encabezado (que "devuelve" con tieneLinea Pendiente).
 void Parser::parsearMeta() {
+    // Lee líneas clave=valor hasta encontrar un encabezado de sección o el final del archivo.
     while (leerLinea()) {
+
         if (lineaActual[0] == '[') {
             // Encontramos el encabezado de la siguiente sección.
             // Lo "devolvemos" para que construirTablero() lo despache correctamente.
             tieneLineaPendiente = true;
             return;
         }
+        // Procesar  meta, esperando formato clave=valor. Ignorar líneas mal formateadas.
         char clave[64], valor[64];
         if (sscanf(lineaActual, "%s = %s", clave, valor) != 2) continue;
-        if (strcmp(clave, "WIDTH")      == 0) w         = atoi(valor);
-        if (strcmp(clave, "HEIGHT")     == 0) h         = atoi(valor);
+        if (strcmp(clave, "WIDTH") == 0) w = atoi(valor);
+        if (strcmp(clave, "HEIGHT") == 0) h = atoi(valor);
         if (strcmp(clave, "STEP_LIMIT") == 0) stepLimit = atoi(valor);
     }
 }
 
+
 void Parser::parsearWall() {
+    // Asignar la matriz de celdas con el tamaño correcto. El parser de paredes asume que w y h ya fueron leídos en META.
     matriz = new celda[w * h];
 
     // inicializar todo como VACIA
@@ -63,8 +78,11 @@ void Parser::parsearWall() {
         matriz[i] = {VACIA, -1};
 
     int fila = 0;
+    // Leer líneas de la sección WALL, marcando las celdas con '#' como PARED. Detenerse al encontrar el siguiente encabezado de sección.
     while (fila < h && leerLinea()) {
         if (lineaActual[0] == '[') return;  // siguiente sección
+
+        // Marcar celdas con '#' como PARED. El formato es una línea de texto con w caracteres, donde '#' indica pared.
         for (int j = 0; j < w && lineaActual[j] != '\0'; j++) {
             if (lineaActual[j] == '#')
                 matriz[fila * w + j] = {PARED, -1};
@@ -73,6 +91,7 @@ void Parser::parsearWall() {
     }
 }
 
+// 
 void Parser::parsearBloques() {
     const int MAX_TEMP = 100;
     Pieza temp[MAX_TEMP];
@@ -86,16 +105,21 @@ void Parser::parsearBloques() {
             fseek(archivo, -(long)(strlen(lineaActual)+1), SEEK_CUR);
             break;
         }
+        // Ignorar líneas vacías o de solo salto de línea.
         if (lineaActual[0] == '\0') continue;
 
+        // id, ancho, alto, posicion x e y
         int id, bw, bh, initX, initY;
-        char colorChar;
+        char colorChar; 
 
+        // leemos el formato esperado: ID=n COLOR=c WIDTH=n HEIGHT=n INIT_X=n INIT_Y=n [GEOMETRY=...]
         if (sscanf(lineaActual, "%d COLOR=%c WIDTH=%d HEIGHT=%d INIT_X=%d INIT_Y=%d",
                    &id, &colorChar, &bw, &bh, &initX, &initY) != 6) continue;
-
+        
+        // creamos la geometria de la peiza
         bool* geom = new bool[bw * bh];
         char* ptr = strstr(lineaActual, "GEOMETRY=");
+        // 
         if (ptr) {
             ptr += strlen("GEOMETRY=");
             for (int k = 0; k < bw * bh; k++) {
@@ -105,11 +129,13 @@ void Parser::parsearBloques() {
             }
         }
 
+        
         coordenada pos = {initX, initY};
-        temp[numPiezas] = Pieza(id, (short)bw, (short)bh, (int)colorChar, pos, geom);
+        temp[numPiezas] = Pieza(id, (short)bw, (short)bh, (int)colorChar, pos, geom); // agregamos la pieza al arreglo temporal
         numPiezas++;
     }
 
+    // Copiar del arreglo temporal al arreglo final de piezas. Esto evita reallocs o un MAX_TEMP fijo en el arreglo final.
     piezas = new Pieza[numPiezas];
     for (int i = 0; i < numPiezas; i++)
         piezas[i] = temp[i];
@@ -127,6 +153,7 @@ void Parser::parsearSalidas() {
             numSalidas++;
     }
 
+    // 
     fseek(archivo, posInicio, SEEK_SET);
     salidas = new Salida[numSalidas];
     int idx = 0;
@@ -146,10 +173,9 @@ void Parser::parsearSalidas() {
         salidas[idx] = Salida(idx, (int)colorChar, pos, esHorizontal,
                               (short)li, (short)lf, (short)paso);
         
-        
         for (int k = 0; k < li; k++) {
-            int fila    = esHorizontal ? y       : y + k;  // ← correcto, crece hacia abajo
-            int columna = esHorizontal ? x + k   : x;
+            int fila    = esHorizontal ? y : y + k;  // ← correcto, crece hacia abajo
+            int columna = esHorizontal ? x + k : x;
             if (fila >= 0 && fila < h && columna >= 0 && columna < w)
                 matriz[fila * w + columna] = {SALIDA, idx};
         }
@@ -162,6 +188,7 @@ void Parser::parsearCompuertas() {
     Compuerta temp[MAX_TEMP];
     numCompuertas = 0;
 
+    // Similar a parsearSalidas(), hacemos dos pasadas para contar y luego leer. Esto evita reallocs o un MAX_TEMP fijo en el arreglo final.
     while (leerLinea()) {
         if (lineaActual[0] == '[') {
             tieneLineaPendiente = true;
@@ -173,9 +200,10 @@ void Parser::parsearCompuertas() {
         int x, y, li, ci, cf, paso;
         short tamano = 1;
 
+        // formato: COLOR=c X=x Y=y ORIENTATION=H,V LI=n CI=n CF=n STEP=n
         if (sscanf(lineaActual, "COLOR=%*c X=%d Y=%d ORIENTATION=%c LI=%d CI=%d CF=%d STEP=%d",
            &x, &y, &orient, &li, &ci, &cf, &paso) != 7) continue;
-
+        
         bool esVertical = (orient == 'V');
         coordenada pos = {x, y};
         temp[numCompuertas] = Compuerta(numCompuertas, pos, tamano, esVertical,
@@ -192,6 +220,7 @@ void Parser::parsearCompuertas() {
         compuertas[i] = temp[i];
 }
 
+// Construye un Tablero* a partir de los datos parseados. Transfiere ownership de los arreglos al Tablero, dejando los punteros del Parser en nullptr para evitar doble liberación.
 Tablero* Parser::construirTablero() {
     if (!archivo) return nullptr;
 
