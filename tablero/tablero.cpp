@@ -170,43 +170,49 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
 bool Tablero::piezaPuedeSalir(int id, const Estado& estado) {
     Pieza& pieza = piezas[id];
     coordenada pos = estado.getPosPiezas()[id];
+    int pw = pieza.getAncho();
+    int ph = pieza.getAlto();
 
-    // Revisar la celda inmediatamente por encima de cada celda de la fila superior de la pieza.
-    for (int j = 0; j < pieza.getAncho(); j++) {
-        if (!pieza.getCelda(j, 0)) continue; // celda no forma parte de la pieza
-        
-        int fila = pos.y - 1;   // fila justo encima de la pieza
-        int columna = pos.x + j;
-        
-        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-            if (esSalidaValida(fila, columna, pieza, estado)) return true;
-    }
+    // Iterar sobre cada salida del tablero buscando una que la pieza pueda usar.
+    // Se itera por salidas (no por celdas del borde de la pieza) para poder verificar
+    // alineación completa: la pieza debe estar TOTALMENTE dentro del rango de la salida,
+    // no solo tener una celda del borde solapada.
+    for (int idx = 0; idx < numSalidas; idx++) {
+        Salida& s = salidas[idx];
 
-    // Revisar la celda inmediatamente por debajo de la fila inferior.
-    for (int j = 0; j < pieza.getAncho(); j++) {
-        if (!pieza.getCelda(j, pieza.getAlto()-1)) continue;
-        int fila    = pos.y + pieza.getAlto(); // fila justo debajo de la pieza
-        int columna = pos.x + j;
-        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-            if (esSalidaValida(fila, columna, pieza, estado)) return true;
-    }
+        // Filtro rápido por color: descartar salidas de otro color sin más cálculos.
+        if (s.getColor() != pieza.getColor()) continue;
 
-    // Revisar la celda a la izquierda de la columna izquierda.
-    for (int i = 0; i < pieza.getAlto(); i++) {
-        if (!pieza.getCelda(0, i)) continue;
-        int fila    = pos.y + i;
-        int columna = pos.x - 1; // columna a la izquierda de la pieza
-        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-            if (esSalidaValida(fila, columna, pieza, estado)) return true;
-    }
+        // Largo dinámico de la salida en el step actual del estado.
+        int largo = calcularLargoSalida(idx, estado);
+        coordenada sp = s.getPos();
 
-    // Revisar la celda a la derecha de la columna derecha.
-    for (int i = 0; i < pieza.getAlto(); i++) {
-        if (!pieza.getCelda(pieza.getAncho()-1, i)) continue;
-        int fila    = pos.y + i;
-        int columna = pos.x + pieza.getAncho(); // columna a la derecha de la pieza
-        if (fila >= 0 && fila < h && columna >= 0 && columna < w)
-            if (esSalidaValida(fila, columna, pieza, estado)) return true;
+        if (s.getEsHorizontal()) {
+            // Salida horizontal: ocupa las columnas [sp.x, sp.x + largo - 1] en la fila sp.y.
+            // La pieza puede salir DESLIZÁNDOSE VERTICALMENTE a través de ella si:
+            //   - Está justo arriba (sp.y == pos.y - 1) → sale hacia arriba
+            //   - Está justo abajo (sp.y == pos.y + ph) → sale hacia abajo
+            bool adyacente = (sp.y == pos.y - 1) || (sp.y == pos.y + ph);
+            if (!adyacente) continue;
+
+            // Alineación completa: el rango de columnas de la pieza [pos.x, pos.x + pw - 1]
+            // debe estar ENTERAMENTE contenido en el rango de la salida [sp.x, sp.x + largo - 1].
+            // Esto garantiza que toda la pieza puede pasar por la apertura sin chocar con paredes.
+            bool alineado = (pos.x >= sp.x) && (pos.x + pw <= sp.x + largo);
+            if (alineado) return true;
+        } else {
+            // Salida vertical: ocupa las filas [sp.y, sp.y + largo - 1] en la columna sp.x.
+            // La pieza puede salir DESLIZÁNDOSE HORIZONTALMENTE a través de ella si:
+            //   - Está justo a la izquierda (sp.x == pos.x - 1) → sale hacia la izquierda
+            //   - Está justo a la derecha (sp.x == pos.x + pw) → sale hacia la derecha
+            bool adyacente = (sp.x == pos.x - 1) || (sp.x == pos.x + pw);
+            if (!adyacente) continue;
+
+            // Alineación completa: el rango de filas de la pieza [pos.y, pos.y + ph - 1]
+            // debe estar enteramente contenido en el rango de la salida [sp.y, sp.y + largo - 1].
+            bool alineado = (pos.y >= sp.y) && (pos.y + ph <= sp.y + largo);
+            if (alineado) return true;
+        }
     }
 
     return false;
