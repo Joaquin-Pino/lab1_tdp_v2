@@ -17,6 +17,8 @@ private:
     TablaHash* closedSet;  // estados ya explorados, para no revisitarlos
     Estado**   vecinosTemp; // buffer reutilizable para los vecinos de cada expansión
     int        maxVecinos;  // tamaño del buffer (numPiezas * (4*maxDim + 1))
+    int        nodosGenerados; // total de Estado* creados durante la búsqueda
+    int        nodosVisitados; // total de nodos expandidos (no duplicados)
 
     // Genera todos los vecinos válidos del estado `actual` y los almacena en vecinosTemp.
     // Devuelve la cantidad de vecinos generados.

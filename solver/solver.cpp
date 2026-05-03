@@ -4,7 +4,8 @@
 #include <iostream>
 
 Solver::Solver(Tablero* t)
-    : tablero(t), openSet(nullptr), closedSet(nullptr), vecinosTemp(nullptr) {
+    : tablero(t), openSet(nullptr), closedSet(nullptr), vecinosTemp(nullptr),
+      nodosGenerados(0), nodosVisitados(0) {
     int maxDim  = (t->getW() > t->getH()) ? t->getW() : t->getH();
     // En el peor caso, cada pieza puede salir (1 opción) o moverse en 4 direcciones
     // hasta el borde del tablero (maxDim pasos). Multiplicamos por el número de piezas.
@@ -121,6 +122,9 @@ Estado** Solver::reconstruirCamino(Estado* final) {
 }
 
 Estado** Solver::resolver(Estado* estadoInicial) {
+    nodosGenerados = 1; // el estado inicial cuenta como el primer nodo generado
+    nodosVisitados = 0;
+
     // Inicializar el estado inicial con su heurística y encolarlo.
     int h = calcularHeuristica(*estadoInicial);
     estadoInicial->setH(h);
@@ -138,10 +142,14 @@ Estado** Solver::resolver(Estado* estadoInicial) {
             continue;
         }
 
+        nodosVisitados++;
+
         // Verificar si llegamos a la meta (todas las piezas salidas).
         if (actual->jugoTerminado(tablero->getNumPiezas())) {
             Estado** camino = reconstruirCamino(actual);
             delete actual; // el estado meta ya fue copiado en reconstruirCamino
+            std::cout << "Nodos generados: " << nodosGenerados
+                      << " | Nodos visitados: " << nodosVisitados << std::endl;
             return camino;
         }
 
@@ -161,6 +169,7 @@ Estado** Solver::resolver(Estado* estadoInicial) {
         int margen = tablero->getNumPiezas() / 2 + 1;
 
         int numVecinos = generarVecinos(actual);
+        nodosGenerados += numVecinos;
         for (int i = 0; i < numVecinos; i++) {
             // Poda por g: el vecino ya excedió el presupuesto.
             if (vecinosTemp[i]->getStepUsed() > tablero->getStepLimit()) {
@@ -185,6 +194,8 @@ Estado** Solver::resolver(Estado* estadoInicial) {
         actual->eliminarOcupacion();
     }
 
+    std::cout << "Nodos generados: " << nodosGenerados
+              << " | Nodos visitados: " << nodosVisitados << std::endl;
     return nullptr; // openSet vacío sin encontrar la meta: sin solución
 }
 
@@ -195,7 +206,7 @@ int Solver::calcularHeuristica(const Estado& estado) const {
         if (estado.piezaYaSalio(i)) continue; // pieza ya fuera, no contribuye al costo restante
 
         coordenada pos = estado.getPosPiezas()[i];
-        Pieza& pieza   = tablero->getPiezas()[i];
+        Pieza& pieza = tablero->getPiezas()[i];
         int pw = pieza.getAncho();
         int ph = pieza.getAlto();
 
@@ -229,6 +240,7 @@ int Solver::calcularHeuristica(const Estado& estado) const {
             // Se divide entre 2 porque cada pieza bloqueante ya está siendo contada
             // en su propia heurística, y contarla doble sobreestimaría el costo total.
             int bloqueos = contarBloqueos(i, pos, ps, estado);
+            ///int bloqueos = 0;
             int costo    = dist + bloqueos / 2;
 
             // Quedarse con la salida que da el menor costo estimado.
