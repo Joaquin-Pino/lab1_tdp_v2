@@ -19,6 +19,7 @@ private:
     int        maxVecinos;  // tamaño del buffer (numPiezas * (4*maxDim + 1))
     int        nodosGenerados; // total de Estado* creados durante la búsqueda
     int        nodosVisitados; // total de nodos expandidos (no duplicados)
+    bool       aplicarPodaRedundante; // true sii el mapa no tiene dinámica (compuertas o salidas oscilantes)
 
     // Genera todos los vecinos válidos del estado `actual` y los almacena en vecinosTemp.
     // Devuelve la cantidad de vecinos generados.
@@ -31,6 +32,10 @@ private:
     // Heurística informada: distancia Manhattan al borde de la pieza hacia su mejor salida,
     // más un término de bloqueos dividido entre 2. Puede sobreestimar levemente.
     int calcularHeuristica(const Estado& estado) const;
+
+    // Cota inferior admisible: solo distancia Manhattan al borde, sin término de bloqueos.
+    // Nunca sobreestima. Usada para podar por f de forma segura (sin margen).
+    int cotaInferiorAdmisible(const Estado& estado) const;
 
     // Cuenta cuántas piezas distintas bloquean el camino rectilíneo de la pieza `idPieza`
     // hacia su salida más cercana (versión sin salida explícita).

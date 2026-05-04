@@ -1,11 +1,12 @@
 // solver.cpp
 #include "solver.h"
 #include <cstring>
+#include <cstdlib>
 #include <iostream>
 
 Solver::Solver(Tablero* t)
     : tablero(t), openSet(nullptr), closedSet(nullptr), vecinosTemp(nullptr),
-      nodosGenerados(0), nodosVisitados(0) {
+      nodosGenerados(0), nodosVisitados(0), aplicarPodaRedundante(false) {
     int maxDim  = (t->getW() > t->getH()) ? t->getW() : t->getH();
     // En el peor caso, cada pieza puede salir (1 opción) o moverse en 4 direcciones
     // hasta el borde del tablero (maxDim pasos). Multiplicamos por el número de piezas.
@@ -13,6 +14,21 @@ Solver::Solver(Tablero* t)
     openSet = new MinHeap(1024);
     closedSet = new TablaHash(100003); // primo grande para distribuir bien los hashes iniciales
     vecinosTemp = new Estado*[maxVecinos];
+
+    // Determinar si el mapa es estático: sin compuertas y sin salidas oscilantes.
+    // Solo en mapas estáticos se puede aplicar la poda de movimientos redundantes
+    // (mover una pieza y deshacer el movimiento). En mapas con dinámica, esa "vuelta"
+    // puede ser necesaria para que cambie el color de una compuerta o el largo de una salida.
+    aplicarPodaRedundante = (t->getNumCompuertas() == 0);
+    if (aplicarPodaRedundante) {
+        Salida* salidas = t->getSalidas();
+        for (int i = 0; i < t->getNumSalidas(); i++) {
+            if (salidas[i].getLi() != salidas[i].getLf()) {
+                aplicarPodaRedundante = false;
+                break;
+            }
+        }
+    }
 }
 
 Solver::~Solver() {
@@ -81,6 +97,10 @@ int Solver::generarVecinos(Estado* actual) {
 
         // Intentar mover la pieza 1 celda en cada dirección.
         for (int d = 0; d < 4; d++) {
+            // Poda: no generar el movimiento que deshace el anterior de la misma pieza
+            // (solo se aplica en mapas estáticos, ver Solver::esMovimientoRedundante).
+            if (esMovimientoRedundante(id, dirChar[d], actual)) continue;
+
             if (!tablero->piezaPuedeMoverse(id, dirs[d], *actual)) continue;
 
             Estado* vecino = actual->clonarYMover(id, dx[d], dy[d], pieza, w);
@@ -125,6 +145,14 @@ Estado** Solver::resolver(Estado* estadoInicial) {
     nodosGenerados = 1; // el estado inicial cuenta como el primer nodo generado
     nodosVisitados = 0;
 
+    // Poda inicial barata: si la cota admisible ya supera el stepLimit, no hay solución posible.
+    if (cotaInferiorAdmisible(*estadoInicial) > tablero->getStepLimit()) {
+        std::cout << "Nodos generados: " << nodosGenerados
+                  << " | Nodos visitados: " << nodosVisitados << std::endl;
+        delete estadoInicial;
+        return nullptr;
+    }
+
     // Inicializar el estado inicial con su heurística y encolarlo.
     int h = calcularHeuristica(*estadoInicial);
     estadoInicial->setH(h);
@@ -164,8 +192,9 @@ Estado** Solver::resolver(Estado* estadoInicial) {
         // el mismo estado no lo inserten en openSet si ya quedó marcado como explorado.
         closedSet->insertar(actual);
 
-        // Margen para la poda por f: tolera que la heurística sobreestime
-        // hasta numPiezas/2 + 1 pasos (proporcional al término de bloqueos/2).
+        // Margen para la poda por f con la heurística informada: tolera la sobreestimación
+        // del término bloqueos/2. Esta poda es mucho más agresiva que la admisible cuando
+        // hay piezas que se bloquean entre sí (caso típico de mapas densos como xd.txt).
         int margen = tablero->getNumPiezas() / 2 + 1;
 
         int numVecinos = generarVecinos(actual);
@@ -176,8 +205,17 @@ Estado** Solver::resolver(Estado* estadoInicial) {
                 delete vecinosTemp[i];
                 continue;
             }
-            // Poda por f con margen: el vecino no puede llegar a la meta dentro del presupuesto.
+            // Poda por f con margen (heurística informada): poda agresiva pero no estrictamente
+            // segura — puede descartar caminos válidos si la informada sobreestima más que el margen.
             if (vecinosTemp[i]->getF() > tablero->getStepLimit() + margen) {
+                delete vecinosTemp[i];
+                continue;
+            }
+            // Poda por f admisible: refuerza la anterior. Estrictamente segura (la cota
+            // admisible nunca sobreestima). Útil en estados donde la heurística informada
+            // sobreestima MENOS que `margen` y aún así no se llega a meta dentro del presupuesto.
+            if (vecinosTemp[i]->getStepUsed()
+                + cotaInferiorAdmisible(*vecinosTemp[i]) > tablero->getStepLimit()) {
                 delete vecinosTemp[i];
                 continue;
             }
@@ -254,6 +292,99 @@ int Solver::calcularHeuristica(const Estado& estado) const {
         total += mejorCosto;
     }
     return total;
+}
+
+int Solver::cotaInferiorAdmisible(const Estado& estado) const {
+    // Cota inferior estrictamente admisible. Para cada pieza activa, calcula la mínima
+    // cantidad de celdas necesarias para llevarla a una posición desde la cual pueda salir,
+    // considerando que:
+    //   - La salida absorbe a la pieza (último paso es gratis), por eso se cuenta hasta la
+    //     fila/columna ADYACENTE a la salida, no hasta la celda de la salida.
+    //   - El span de la salida (ancho LF) permite que la pieza se alinee en cualquier punto
+    //     dentro de él, no solo en la celda de inicio.
+    int total = 0;
+    int W = tablero->getW();
+    int H = tablero->getH();
+
+    for (int i = 0; i < tablero->getNumPiezas(); i++) {
+        if (estado.piezaYaSalio(i)) continue;
+
+        coordenada pos = estado.getPosPiezas()[i];
+        Pieza& pieza = tablero->getPiezas()[i];
+        int pw = pieza.getAncho();
+        int ph = pieza.getAlto();
+
+        int mejorCosto = -1;
+
+        for (int j = 0; j < tablero->getNumSalidas(); j++) {
+            Salida& salida = tablero->getSalidas()[j];
+            if (salida.getColor() != pieza.getColor()) continue;
+            if (!tablero->piezaPodriaSalir(pieza, salida)) continue;
+
+            coordenada ps = salida.getPos();
+            // Usamos LF (largo máximo): da el span más optimista, lo que mantiene la cota admisible.
+            int L = salida.getLf() > salida.getLi() ? salida.getLf() : salida.getLi();
+
+            int perpCost = 0, parCost = 0;
+
+            if (salida.getEsHorizontal()) {
+                // Salida horizontal: span [ps.x..ps.x+L-1] en fila ps.y (en algún borde).
+                // Fila adyacente desde la cual la pieza puede salir.
+                int adjRow;
+                if (ps.y == 0)              adjRow = 1;
+                else if (ps.y == H - 1)     adjRow = H - 2;
+                else                        adjRow = ps.y; // caso degenerado, no debería pasar
+                // Perpendicular: distancia del borde superior/inferior de la pieza a adjRow.
+                if (pos.y > adjRow)              perpCost = pos.y - adjRow;
+                else if (pos.y + ph - 1 < adjRow) perpCost = adjRow - (pos.y + ph - 1);
+                // Paralelo: alinear el bbox horizontalmente dentro del span.
+                if (pos.x < ps.x)                       parCost = ps.x - pos.x;
+                else if (pos.x + pw - 1 > ps.x + L - 1) parCost = (pos.x + pw - 1) - (ps.x + L - 1);
+            } else {
+                // Salida vertical: span [ps.y..ps.y+L-1] en columna ps.x (en algún borde).
+                int adjCol;
+                if (ps.x == 0)              adjCol = 1;
+                else if (ps.x == W - 1)     adjCol = W - 2;
+                else                        adjCol = ps.x;
+                if (pos.x > adjCol)              perpCost = pos.x - adjCol;
+                else if (pos.x + pw - 1 < adjCol) perpCost = adjCol - (pos.x + pw - 1);
+                if (pos.y < ps.y)                       parCost = ps.y - pos.y;
+                else if (pos.y + ph - 1 > ps.y + L - 1) parCost = (pos.y + ph - 1) - (ps.y + L - 1);
+            }
+
+            int dist = perpCost + parCost;
+            if (mejorCosto == -1 || dist < mejorCosto)
+                mejorCosto = dist;
+        }
+
+        if (mejorCosto == -1) mejorCosto = 0;
+        total += mejorCosto;
+    }
+    return total;
+}
+
+bool Solver::esMovimientoRedundante(int idPieza, char dir, const Estado* actual) const {
+    // Si el mapa tiene compuertas o salidas oscilantes, no podar: a veces es necesario
+    // "perder" un step para que cambie un color de compuerta o un largo de salida.
+    if (!aplicarPodaRedundante) return false;
+
+    const char* mov = actual->getMovimiento();
+    if (mov[0] == '\0' || mov[0] == 'S') return false; // sin movimiento previo, o el previo fue una salida
+
+    // Formato del movimiento previo: "<dir><idExterno>,<dist>" (ej: "R3,1", "U5,1").
+    char prevDir = mov[0];
+    int  prevId  = atoi(mov + 1);
+
+    // Si la pieza previa no es la actual, no hay redundancia: mover otra pieza no deshace nada.
+    int extId = tablero->getPiezas()[idPieza].getId();
+    if (prevId != extId) return false;
+
+    // dir es opuesta a prevDir => moverse hacia el lado contrario regresa al estado anterior.
+    if ((prevDir == 'U' && dir == 'D') || (prevDir == 'D' && dir == 'U') ||
+        (prevDir == 'L' && dir == 'R') || (prevDir == 'R' && dir == 'L'))
+        return true;
+
+    return false;
 }
 
 int Solver::contarBloqueos(int idPieza, coordenada pos,
