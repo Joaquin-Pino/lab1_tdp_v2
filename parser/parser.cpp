@@ -198,19 +198,23 @@ void Parser::parsearCompuertas() {
 
         char orient;
         int x, y, li, ci, cf, paso;
-        short tamano = 1;
 
         // formato: COLOR=c X=x Y=y ORIENTATION=H,V LI=n CI=n CF=n STEP=n
         if (sscanf(lineaActual, "COLOR=%*c X=%d Y=%d ORIENTATION=%c LI=%d CI=%d CF=%d STEP=%d",
            &x, &y, &orient, &li, &ci, &cf, &paso) != 7) continue;
-        
+
+        short tamano = (short)li;
         bool esVertical = (orient == 'V');
         coordenada pos = {x, y};
         temp[numCompuertas] = Compuerta(numCompuertas, pos, tamano, esVertical,
                                         (short)ci, (short)cf, (short)paso);
 
-        if (y >= 0 && y < h && x >= 0 && x < w)
-            matriz[y * w + x] = {COMPUERTA, numCompuertas};
+        for (int k = 0; k < tamano; k++) {
+            int fila    = esVertical ? y + k : y;
+            int columna = esVertical ? x     : x + k;
+            if (fila >= 0 && fila < h && columna >= 0 && columna < w)
+                matriz[fila * w + columna] = {COMPUERTA, numCompuertas};
+        }
 
         numCompuertas++;
     }
