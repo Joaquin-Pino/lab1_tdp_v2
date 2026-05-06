@@ -309,52 +309,82 @@ int Solver::cotaInferiorAdmisible(const Estado& estado) const {
     for (int i = 0; i < tablero->getNumPiezas(); i++) {
         if (estado.piezaYaSalio(i)) continue;
 
-        coordenada pos = estado.getPosPiezas()[i];
-        Pieza& pieza = tablero->getPiezas()[i];
-        int pw = pieza.getAncho();
-        int ph = pieza.getAlto();
-
-        int mejorCosto = -1;
+        coordenada pos  = estado.getPosPiezas()[i];
+        Pieza& pieza    = tablero->getPiezas()[i];
+        int pw          = pieza.getAncho();
+        int ph          = pieza.getAlto();
+        int mejorCosto  = -1;
 
         for (int j = 0; j < tablero->getNumSalidas(); j++) {
             Salida& salida = tablero->getSalidas()[j];
+
             if (salida.getColor() != pieza.getColor()) continue;
             if (!tablero->piezaPodriaSalir(pieza, salida)) continue;
 
             coordenada ps = salida.getPos();
-            // Usamos LF (largo máximo): da el span más optimista, lo que mantiene la cota admisible.
-            int L = salida.getLf() > salida.getLi() ? salida.getLf() : salida.getLi();
 
-            int perpCost = 0, parCost = 0;
+            // Usamos LF (largo máximo): da el span más optimista, lo que mantiene la cota admisible.
+            int L = (salida.getLf() > salida.getLi()) ? salida.getLf() : salida.getLi();
+
+            int perpCost = 0;
+            int parCost  = 0;
 
             if (salida.getEsHorizontal()) {
                 // Salida horizontal: span [ps.x..ps.x+L-1] en fila ps.y (en algún borde).
                 // Fila adyacente desde la cual la pieza puede salir.
                 int adjRow;
-                if (ps.y == 0)              adjRow = 1;
-                else if (ps.y == H - 1)     adjRow = H - 2;
-                else                        adjRow = ps.y; // caso degenerado, no debería pasar
+                if (ps.y == 0) {
+                    adjRow = 1;
+                } else if (ps.y == H - 1) {
+                    adjRow = H - 2;
+                } else {
+                    adjRow = ps.y; // caso degenerado, no debería pasar
+                }
+
                 // Perpendicular: distancia del borde superior/inferior de la pieza a adjRow.
-                if (pos.y > adjRow)              perpCost = pos.y - adjRow;
-                else if (pos.y + ph - 1 < adjRow) perpCost = adjRow - (pos.y + ph - 1);
+                if (pos.y > adjRow) {
+                    perpCost = pos.y - adjRow;
+                } else if (pos.y + ph - 1 < adjRow) {
+                    perpCost = adjRow - (pos.y + ph - 1);
+                }
+
                 // Paralelo: alinear el bbox horizontalmente dentro del span.
-                if (pos.x < ps.x)                       parCost = ps.x - pos.x;
-                else if (pos.x + pw - 1 > ps.x + L - 1) parCost = (pos.x + pw - 1) - (ps.x + L - 1);
+                if (pos.x < ps.x) {
+                    parCost = ps.x - pos.x;
+                } else if (pos.x + pw - 1 > ps.x + L - 1) {
+                    parCost = (pos.x + pw - 1) - (ps.x + L - 1);
+                }
+
             } else {
                 // Salida vertical: span [ps.y..ps.y+L-1] en columna ps.x (en algún borde).
                 int adjCol;
-                if (ps.x == 0)              adjCol = 1;
-                else if (ps.x == W - 1)     adjCol = W - 2;
-                else                        adjCol = ps.x;
-                if (pos.x > adjCol)              perpCost = pos.x - adjCol;
-                else if (pos.x + pw - 1 < adjCol) perpCost = adjCol - (pos.x + pw - 1);
-                if (pos.y < ps.y)                       parCost = ps.y - pos.y;
-                else if (pos.y + ph - 1 > ps.y + L - 1) parCost = (pos.y + ph - 1) - (ps.y + L - 1);
+                if (ps.x == 0) {
+                    adjCol = 1;
+                } else if (ps.x == W - 1) {
+                    adjCol = W - 2;
+                } else {
+                    adjCol = ps.x;
+                }
+
+                // Perpendicular: distancia del borde izquierdo/derecho de la pieza a adjCol.
+                if (pos.x > adjCol) {
+                    perpCost = pos.x - adjCol;
+                } else if (pos.x + pw - 1 < adjCol) {
+                    perpCost = adjCol - (pos.x + pw - 1);
+                }
+
+                // Paralelo: alinear el bbox verticalmente dentro del span.
+                if (pos.y < ps.y) {
+                    parCost = ps.y - pos.y;
+                } else if (pos.y + ph - 1 > ps.y + L - 1) {
+                    parCost = (pos.y + ph - 1) - (ps.y + L - 1);
+                }
             }
 
             int dist = perpCost + parCost;
-            if (mejorCosto == -1 || dist < mejorCosto)
+            if (mejorCosto == -1 || dist < mejorCosto) {
                 mejorCosto = dist;
+            }
         }
 
         if (mejorCosto == -1) mejorCosto = 0;

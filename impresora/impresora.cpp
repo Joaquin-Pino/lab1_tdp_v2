@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
+#include <cctype>
 
 void Impresora::imprimirTablero(const Tablero& Tablero){
     Tablero.imprimir();
@@ -62,7 +63,9 @@ void Impresora::imprimirEstado(const Tablero& tablero, const Estado& estado) {
             switch (c.tipo) {
                 case VACIA:     std::cout << "."; break;
                 case PARED:     std::cout << "#"; break;
-                case SALIDA:    std::cout << "S"; break;
+                case SALIDA:
+                    std::cout << (char)std::toupper(salidas[c.id].getColor());
+                    break;
                 case COMPUERTA: std::cout << "C"; break;
                 case PIEZA:
                     std::cout << (char)piezas[c.id].getColor();

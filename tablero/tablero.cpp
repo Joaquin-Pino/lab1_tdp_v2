@@ -1,6 +1,7 @@
 #include "tablero.h"
 #include <iostream>
 #include <climits>
+#include <cctype>
 
 Tablero::Tablero() : matriz(nullptr), piezas(nullptr), salidas(nullptr),
     compuertas(nullptr), numPiezas(0), numSalidas(0),
@@ -324,7 +325,9 @@ void Tablero::imprimir() const {
                 case PARED:     std::cout << "#"; break;
                 case COMPUERTA: std::cout << "C"; break;
                 case PIEZA:     std::cout << "B"; break;
-                case SALIDA:    std::cout << "S"; break;
+                case SALIDA:
+                    std::cout << (char)std::toupper(salidas[c.id].getColor());
+                    break;
                 default:        std::cout << "?"; break;
             }
         }

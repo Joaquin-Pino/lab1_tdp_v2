@@ -2,6 +2,7 @@
 #include "parser.h"
 #include <cstring>
 #include <cstdlib>
+#include <cctype>
 #include <iostream>
 
 Parser::Parser(const char* nombreArchivo)
@@ -197,11 +198,37 @@ void Parser::parsearCompuertas() {
         if (lineaActual[0] == '\0') continue;
 
         char orient;
-        int x, y, li, ci, cf, paso;
+        int x, y, li, paso;
+        char ciStr[16], cfStr[16];
 
-        // formato: COLOR=c X=x Y=y ORIENTATION=H,V LI=n CI=n CF=n STEP=n
-        if (sscanf(lineaActual, "COLOR=%*c X=%d Y=%d ORIENTATION=%c LI=%d CI=%d CF=%d STEP=%d",
-           &x, &y, &orient, &li, &ci, &cf, &paso) != 7) continue;
+        // El campo COLOR= es opcional en [GATE]: el color de la compuerta se determina
+        // por Ci/Cf, no por COLOR. Saltamos el prefijo si aparece.
+        const char* linea = lineaActual;
+        if (strncmp(linea, "COLOR=", 6) == 0) {
+            const char* p = strstr(linea, "X=");
+            if (!p) continue;
+            linea = p;
+        }
+
+        // formato: [COLOR=c] X=x Y=y ORIENTATION=H,V LI=n CI=<char|int> CF=<char|int> STEP=n
+        if (sscanf(linea, "X=%d Y=%d ORIENTATION=%c LI=%d CI=%15s CF=%15s STEP=%d",
+           &x, &y, &orient, &li, ciStr, cfStr, &paso) != 7) continue;
+
+        // Ci/Cf admiten dos formatos: letra (CI=a) o código ASCII (CI=97).
+        // Si todos los caracteres son dígitos lo interpretamos como entero,
+        // si no, tomamos el primer carácter como código ASCII (igual que en [BLOCK]).
+        int ci, cf;
+        bool ciDig = ciStr[0] != '\0';
+        for (int k = 0; ciStr[k]; k++) if (!isdigit((unsigned char)ciStr[k])) { ciDig = false; break; }
+        ci = ciDig ? atoi(ciStr) : (int)ciStr[0];
+
+        bool cfDig = cfStr[0] != '\0';
+        for (int k = 0; cfStr[k]; k++) if (!isdigit((unsigned char)cfStr[k])) { cfDig = false; break; }
+        cf = cfDig ? atoi(cfStr) : (int)cfStr[0];
+
+        // El cálculo de ciclo en Tablero::calcularColorCompuerta asume Ci <= Cf.
+        // Si vienen invertidos en el archivo, los intercambiamos.
+        if (ci > cf) { int t = ci; ci = cf; cf = t; }
 
         short tamano = (short)li;
         bool esVertical = (orient == 'V');
