@@ -71,8 +71,8 @@ void testCrearEstadoInicial() {
     Estado* e = t->crearEstadoInicial();
 
     verificar(e != nullptr, "estado no es null");
-    verificar(e->getPosPiezas()[0].x == 1, "pos x = 1");
-    verificar(e->getPosPiezas()[0].y == 1, "pos y = 1");
+    verificar(e->getPosPieza(0).x == 1, "pos x = 1");
+    verificar(e->getPosPieza(0).y == 1, "pos y = 1");
     verificar(e->getStepUsed() == 0, "stepUsed = 0");
     verificar(e->getPiezasSalidas() == 0, "ninguna pieza salió");
     verificar(!e->jugoTerminado(1),  "juego no terminado");
@@ -144,8 +144,7 @@ void testPiezaPuedeSalir() {
     verificar(!t->piezaPuedeSalir(0, *e), "no puede salir desde (1,1)");
 
     // mover pieza a (3,1) → derecha adyacente a (4,1)
-    e->getPosPiezas()[0].x = 3;
-    e->getPosPiezas()[0].y = 1;
+    e->setPosPieza(0, 3, 1);
     verificar(t->piezaPuedeSalir(0, *e), "puede salir desde (3,1)");
 
     delete e;
@@ -256,8 +255,8 @@ void testConParser() {
     verificar(t->getNumSalidas() == 1, "1 salida");
 
     Estado* e = t->crearEstadoInicial();
-    verificar(e->getPosPiezas()[0].x == 1, "pieza inicial x=1");
-    verificar(e->getPosPiezas()[0].y == 1, "pieza inicial y=1");
+    verificar(e->getPosPieza(0).x == 1, "pieza inicial x=1");
+    verificar(e->getPosPieza(0).y == 1, "pieza inicial y=1");
     verificar(!t->piezaPuedeSalir(0, *e),  "pieza no puede salir desde (1,1)");
 
     delete e;

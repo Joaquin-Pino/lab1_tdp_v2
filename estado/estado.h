@@ -4,97 +4,106 @@
 
 // Representa una configuración instantánea del tablero durante la búsqueda A*.
 // Es el "nodo" del grafo implícito: encapsula todo lo que puede cambiar entre pasos
-// (posiciones, compuertas, salidas, piezas salidas) sin duplicar los datos estáticos del Tablero.
+// (posiciones de piezas y bitmask de salidas) sin duplicar los datos estáticos del Tablero.
 //
-// Regla de memoria: este objeto es dueño de posPiezas, colorCompuertas, largoSalidas y ocupacion.
-// El puntero `parent` NO es propiedad — no se debe liberar desde aquí.
-// La TablaHash sí toma ownership de los Estado* que almacena.
-class Estado{
+// Diseño orientado a memoria: este objeto vive millones de veces en el closedSet,
+// así que se evitan los caches derivables (colores de compuertas, largos de salidas:
+// son función de stepUsed y se calculan on-demand desde Tablero) y se empacan
+// los campos restantes (posiciones a 2 B por pieza, movimiento a 2 B).
+//
+// Regla de memoria: dueño de posPiezas y ocupacion. parent NO es propiedad.
+class Estado {
 private:
-    int numPiezas;       // tamaño de posPiezas
-    int numCompuertas;   // tamaño de colorCompuertas
-    int numSalidas;      // tamaño de largoSalidas
+    // posPiezas[i] empaca la posición de la pieza i: byte bajo = x, byte alto = y.
+    // Boards de hasta 256x256. numPiezas entradas, 2 B cada una.
+    unsigned short* posPiezas;
 
-    coordenada* posPiezas;
-    int* colorCompuertas;
-    short* largoSalidas;
     // Mapa de ocupación: ocupacion[y*w + x] = id de la pieza en esa celda, -1 si vacía.
-    // Se libera anticipadamente al insertar en closedSet (ver eliminarOcupacion),
-    // porque ocupa width*height shorts por estado y domina el consumo de RAM con millones de nodos.
+    // Se libera anticipadamente al insertar en closedSet (ver eliminarOcupacion).
     short* ocupacion;
 
-    // Bitmask: el bit i está encendido si la pieza i ya salió del tablero.
-    // Permite verificar en O(1) si todas las piezas salieron sin iterar sobre el arreglo.
-    unsigned int piezasSalidas;
+    // Predecesor en A* (no owned). La cadena se rompe al copiar para reconstruir el camino.
+    Estado* parent;
 
+    int numPiezas;
     int stepUsed;
-    int f; // f = g + h, donde g = stepUsed
-    int h; // estimación heurística del costo restante hasta la meta
+    int f; // f = g + h, g = stepUsed
+    int h;
     int width;
     int height;
 
-    Estado* parent; // nodo predecesor en A* (no owned)
-    char movimiento[10]; // movimiento que generó este estado (ej: "R3,1", "S2")
+    // Bitmask: bit i encendido si la pieza i ya salió.
+    unsigned int piezasSalidas;
 
-    public:
+    // Movimiento que generó este estado. Empacado:
+    //   bits 0-2: dir (0=NONE, 1=U, 2=D, 3=L, 4=R, 5=S)
+    //   bits 3-15: id externo de la pieza (hasta 8191)
+    unsigned short movimiento;
+
+public:
+    // Período de las dinámicas globales del Tablero actual (LCM de los ciclos de
+    // compuertas y salidas oscilantes). Lo setea Tablero::crearEstadoInicial.
+    // Se usa en hash/igualA para que dos estados con mismas posiciones pero distinto
+    // stepUsed se distingan solo cuando difieren en su fase del ciclo dinámico.
+    // Default 1 ⇒ tableros estáticos: stepUsed deja de discriminar.
+    static int dynamicPeriod;
+
     Estado();
-    Estado(int numPiezas, int numCompuertas, int numSalidas, coordenada* posPiezas,
-            int* colorCompuertas, short* largoSalidas, unsigned int piezasSalidas,
-            int stepUsed, int h, int w, int height, Estado* parent, const char* movimiento, short* ocupacion);
-
+    Estado(int numPiezas, const coordenada* posPiezas, unsigned int piezasSalidas,
+           int stepUsed, int h, int width, int height, Estado* parent,
+           unsigned short movimiento, const short* ocupacion);
     Estado(const Estado& otro);
     Estado& operator=(const Estado& otro);
     ~Estado();
 
-    int getNumPiezas() const;
-    int getNumCompuertas() const;
-    int getNumSalidas() const;
-    coordenada* getPosPiezas() const;
-    int* getColorCompuertas() const;
-    short* getLargoSalidas() const;
-    unsigned int getPiezasSalidas() const;
-    int getStepUsed() const;
-    int getF() const;
-    int getH() const;
-    short* getOcupacion() const;
+    int getNumPiezas() const { return numPiezas; }
+    int getStepUsed()  const { return stepUsed; }
+    int getF()         const { return f; }
+    int getH()         const { return h; }
+    unsigned int getPiezasSalidas() const { return piezasSalidas; }
+    short* getOcupacion() const { return ocupacion; }
+    Estado* getParent()   const { return parent; }
+    unsigned short getMovimientoEncoded() const { return movimiento; }
 
-    void setF(int nuevoF);
-    void setH(int h);
-    void setStepUsed(int s);
-    void setParent(Estado* p);
-    void setMovimiento(const char* mov);
-    void setPiezasSalidas(unsigned int ps);
-    Estado* getParent() const;
-    const char* getMovimiento() const;
+    // Acceso a posiciones (con desempacado). No exponemos el arreglo crudo
+    // para que el resto del código no dependa del formato empacado.
+    coordenada getPosPieza(int i) const;
+    void       setPosPieza(int i, int x, int y);
+
+    void setF(int v)             { f = v; }
+    void setH(int v)             { h = v; }
+    void setStepUsed(int v)      { stepUsed = v; }
+    void setParent(Estado* p)    { parent = p; }
+    void setPiezasSalidas(unsigned int ps) { piezasSalidas = ps; }
+    void setMovimientoEncoded(unsigned short m) { movimiento = m; }
+
+    // Codifica un par (dirChar, idExterno) en el formato empacado de `movimiento`.
+    // dirChar válido: 'U','D','L','R','S'. Cualquier otro valor → código 0 (NONE).
+    static unsigned short codificarMovimiento(char dirChar, int piezaExtId);
+
+    // Desempaca el movimiento en (dirChar, idExterno). dirChar='\0' si es NONE.
+    void decodificarMovimiento(char& dirChar, int& piezaExtId) const;
 
     bool piezaYaSalio(int idPieza) const;
     bool jugoTerminado(int numPiezas) const;
 
-    // Hash determinístico del estado para la TablaHash.
-    // Codifica posiciones, colores de compuertas, largos de salidas y piezas salidas.
-    // No incluye stepUsed ni f/h: dos estados con misma configuración pero diferente g
-    // se consideran iguales (el cerrado set descarta el más costoso).
+    // Hash determinístico. Codifica posiciones, piezasSalidas y stepUsed % dynamicPeriod.
     unsigned int generarHash() const;
 
-    // Mueve la pieza una celda, actualizando el mapa de ocupación y sumando 1 a stepUsed.
+    // Igualdad estructural (no compara stepUsed/f/h ni movimiento; sí
+    // stepUsed % dynamicPeriod para discriminar fases del ciclo dinámico).
+    bool igualA(const Estado& otro) const;
+
+    // Mueve la pieza una celda, actualiza ocupación y suma 1 a stepUsed.
     void moverPieza(int id, int dx, int dy, const Pieza& pieza, int w);
 
-    // Marca la pieza como salida y limpia su ocupación.
-    // No incrementa stepUsed: sacar una pieza es gratis en el modelo del juego.
+    // Marca la pieza como salida y limpia su ocupación. No incrementa stepUsed.
     void sacarPieza(int id, const Pieza& pieza, int w);
 
-    void actualizarCompuerta(int idx, int color);
-    void actualizarSalida(int idx, short largo);
-
-    // Libera el mapa de ocupación anticipadamente para ahorrar memoria.
-    // Es seguro llamarlo en estados ya insertados en closedSet porque la igualdad
-    // entre estados se compara por posPiezas + piezasSalidas + compuertas + salidas,
-    // no por ocupacion (que es derivable de las posiciones).
+    // Libera el mapa de ocupación anticipadamente. Es seguro tras insertar en closedSet
+    // porque la igualdad no depende de ocupacion (es derivable de las posiciones).
     void eliminarOcupacion();
 
-    // Devuelve un nuevo Estado con el movimiento ya aplicado (incrementa stepUsed).
     Estado* clonarYMover(int id, int dx, int dy, const Pieza& pieza, int w) const;
-
-    // Devuelve un nuevo Estado con la pieza marcada como salida (no incrementa stepUsed).
     Estado* clonarYSacar(int id, const Pieza& pieza, int w) const;
 };

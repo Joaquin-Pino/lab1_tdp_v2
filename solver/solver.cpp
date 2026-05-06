@@ -12,7 +12,11 @@ Solver::Solver(Tablero* t)
     // hasta el borde del tablero (maxDim pasos). Multiplicamos por el número de piezas.
     maxVecinos = t->getNumPiezas() * (4 * maxDim + 1);
     openSet = new MinHeap(1024);
-    closedSet = new TablaHash(100003); // primo grande para distribuir bien los hashes iniciales
+    // Capacidad inicial adaptativa: para mapas con muchas piezas el closed set crece
+    // a millones de entradas; arrancar más grande evita 3-4 rehashes (cada uno
+    // genera un pico transitorio que duplica el consumo).
+    int capInicial = (t->getNumPiezas() >= 10) ? 1000003 : 100003;
+    closedSet = new TablaHash(capInicial);
     vecinosTemp = new Estado*[maxVecinos];
 
     // Determinar si el mapa es estático: sin compuertas y sin salidas oscilantes.
@@ -45,49 +49,44 @@ Solver::~Solver() {
     delete[] vecinosTemp;
 }
 
-void Solver::prepararVecino(Estado* vecino, Estado* actual, char mov[10]) const {
-    // Actualizar el color de cada compuerta según el stepUsed del vecino
-    // (puede haber cambiado si el nuevo step cruzó un múltiplo del `paso`).
-    for (int i = 0; i < tablero->getNumCompuertas(); i++)
-        vecino->actualizarCompuerta(i, tablero->calcularColorCompuerta(i, *vecino));
-
-    // Actualizar el largo de cada salida por la misma razón.
-    for (int i = 0; i < tablero->getNumSalidas(); i++)
-        vecino->actualizarSalida(i, tablero->calcularLargoSalida(i, *vecino));
-
-    // Calcular h y f para que el heap pueda ordenar este vecino correctamente.
+void Solver::prepararVecino(Estado* vecino, Estado* actual, unsigned short mov) const {
+    // Los colores de compuerta y largos de salida ya no se cachean: son función
+    // determinística de stepUsed y se calculan on-demand en Tablero.
     int hv = calcularHeuristica(*vecino);
     vecino->setH(hv);
     vecino->setF(vecino->getStepUsed() + hv);
-
-    // Registrar el estado padre para poder reconstruir el camino al llegar a la meta.
     vecino->setParent(actual);
-    vecino->setMovimiento(mov);
+    vecino->setMovimientoEncoded(mov);
 }
 
 int Solver::generarVecinos(Estado* actual) {
-    int   count    = 0;
+    int   count     = 0;
     int   numPiezas = tablero->getNumPiezas();
     int   w         = tablero->getW();
+    int   stepLim   = tablero->getStepLimit();
     Pieza* piezas   = tablero->getPiezas();
 
     // Tablas paralelas de las 4 direcciones para evitar repetir el switch en cada iteración.
-    direccion dirs[4] = {ARRIBA, ABAJO, IZQUIERDA, DERECHA};
-    int dx[4] = { 0,  0, -1,  1};
-    int  dy[4] = {-1,  1,  0,  0};
-    char dirChar[4] = {'U', 'D', 'L', 'R'};
+    direccion dirs[4]   = {ARRIBA, ABAJO, IZQUIERDA, DERECHA};
+    int       dx[4]     = { 0,  0, -1,  1};
+    int       dy[4]     = {-1,  1,  0,  0};
+    char      dirChar[4] = {'U', 'D', 'L', 'R'};
+
+    // Poda pre-clone para movimientos: si stepUsed+1 ya excede el presupuesto,
+    // ninguna dirección puede generar un vecino útil. Se evalúa una sola vez por estado
+    // y nos ahorra todas las clonaciones de slides en estados profundos.
+    bool slidePermitido = (actual->getStepUsed() + 1) <= stepLim;
 
     for (int id = 0; id < numPiezas; id++) {
         if (actual->piezaYaSalio(id)) continue; // pieza ya fuera del tablero, ignorar
         Pieza& pieza = piezas[id];
 
         if (tablero->piezaPuedeSalir(id, *actual)) {
-            // Si la pieza puede salir ahora, generamos solo ese vecino y pasamos a la siguiente.
-            // No generamos también movimientos: sacar es siempre preferible a seguir moviendo.
+            // Sacar pieza no incrementa stepUsed, así que nunca rompe el presupuesto.
+            // Generamos solo este vecino y pasamos a la siguiente: sacar es preferible.
             Estado* vecino = actual->clonarYSacar(id, pieza, w);
 
-            char mov[10];
-            snprintf(mov, 10, "S%d", pieza.getId()); // formato de salida: "S<idExterno>"
+            unsigned short mov = Estado::codificarMovimiento('S', pieza.getId());
             prepararVecino(vecino, actual, mov);
 
             vecinosTemp[count++] = vecino;
@@ -95,18 +94,15 @@ int Solver::generarVecinos(Estado* actual) {
             continue;
         }
 
-        // Intentar mover la pieza 1 celda en cada dirección.
-        for (int d = 0; d < 4; d++) {
-            // Poda: no generar el movimiento que deshace el anterior de la misma pieza
-            // (solo se aplica en mapas estáticos, ver Solver::esMovimientoRedundante).
-            if (esMovimientoRedundante(id, dirChar[d], actual)) continue;
+        if (!slidePermitido) continue; // sin presupuesto para más slides en esta pieza
 
+        for (int d = 0; d < 4; d++) {
+            if (esMovimientoRedundante(id, dirChar[d], actual)) continue;
             if (!tablero->piezaPuedeMoverse(id, dirs[d], *actual)) continue;
 
             Estado* vecino = actual->clonarYMover(id, dx[d], dy[d], pieza, w);
 
-            char mov[10];
-            snprintf(mov, 10, "%c%d,1", dirChar[d], pieza.getId()); // formato: "D<idExterno>,1"
+            unsigned short mov = Estado::codificarMovimiento(dirChar[d], pieza.getId());
             prepararVecino(vecino, actual, mov);
 
             vecinosTemp[count++] = vecino;
@@ -243,7 +239,7 @@ int Solver::calcularHeuristica(const Estado& estado) const {
     for (int i = 0; i < tablero->getNumPiezas(); i++) {
         if (estado.piezaYaSalio(i)) continue; // pieza ya fuera, no contribuye al costo restante
 
-        coordenada pos = estado.getPosPiezas()[i];
+        coordenada pos = estado.getPosPieza(i);
         Pieza& pieza = tablero->getPiezas()[i];
         int pw = pieza.getAncho();
         int ph = pieza.getAlto();
@@ -309,7 +305,7 @@ int Solver::cotaInferiorAdmisible(const Estado& estado) const {
     for (int i = 0; i < tablero->getNumPiezas(); i++) {
         if (estado.piezaYaSalio(i)) continue;
 
-        coordenada pos  = estado.getPosPiezas()[i];
+        coordenada pos  = estado.getPosPieza(i);
         Pieza& pieza    = tablero->getPiezas()[i];
         int pw          = pieza.getAncho();
         int ph          = pieza.getAlto();
@@ -398,22 +394,18 @@ bool Solver::esMovimientoRedundante(int idPieza, char dir, const Estado* actual)
     // "perder" un step para que cambie un color de compuerta o un largo de salida.
     if (!aplicarPodaRedundante) return false;
 
-    const char* mov = actual->getMovimiento();
-    if (mov[0] == '\0' || mov[0] == 'S') return false; // sin movimiento previo, o el previo fue una salida
+    char prevDir;
+    int  prevId;
+    actual->decodificarMovimiento(prevDir, prevId);
+    if (prevDir == '\0' || prevDir == 'S') return false; // sin movimiento previo o salida
 
-    // Formato del movimiento previo: "<dir><idExterno>,<dist>" (ej: "R3,1", "U5,1").
-    char prevDir = mov[0];
-    int  prevId  = atoi(mov + 1);
-
-    // Si la pieza previa no es la actual, no hay redundancia: mover otra pieza no deshace nada.
     int extId = tablero->getPiezas()[idPieza].getId();
-    if (prevId != extId) return false;
+    if (prevId != extId) return false; // mover otra pieza no deshace nada
 
-    // dir es opuesta a prevDir => moverse hacia el lado contrario regresa al estado anterior.
+    // dir opuesta a prevDir ⇒ regresa al estado anterior
     if ((prevDir == 'U' && dir == 'D') || (prevDir == 'D' && dir == 'U') ||
         (prevDir == 'L' && dir == 'R') || (prevDir == 'R' && dir == 'L'))
         return true;
-
     return false;
 }
 

@@ -19,10 +19,8 @@ void verificar(bool cond, const char* nombre) {
 // crea un estado mínimo con f dado (1 pieza, tablero 1x1)
 Estado* crearEstado(int f) {
     coordenada pos[1] = {{0, 0}};
-    int   cc[1] = {0};
-    short ls[1] = {0};
     short oc[1]; oc[0] = -1;
-    Estado* e = new Estado(1, 0, 0, pos, cc, ls, 0u, 0, 0, 1, 1, nullptr, "", oc);
+    Estado* e = new Estado(1, pos, 0u, 0, 0, 1, 1, nullptr, 0, oc);
     e->setF(f);
     return e;
 }

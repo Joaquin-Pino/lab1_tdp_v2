@@ -51,9 +51,9 @@ private:
     // el estado resultante ya fue (o será) evaluado.
     bool esMovimientoRedundante(int idPieza, char dir, const Estado* actual) const;
 
-    // Post-procesa un vecino recién creado: actualiza elementos dinámicos (compuertas, salidas),
-    // calcula h y f, y registra el parent y el movimiento que lo generó.
-    void prepararVecino(Estado* vecino, Estado* actual, char mov[10]) const;
+    // Post-procesa un vecino recién creado: calcula h y f, y registra el parent
+    // y el movimiento empacado que lo generó.
+    void prepararVecino(Estado* vecino, Estado* actual, unsigned short mov) const;
 
 public:
     Solver(Tablero* t);

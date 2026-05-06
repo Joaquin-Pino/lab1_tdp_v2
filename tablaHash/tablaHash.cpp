@@ -32,35 +32,9 @@ unsigned int TablaHash::calcularHashConCapacidad(const Estado* e, int cap) const
 }
 
 bool TablaHash::sonIguales(const Estado* a, const Estado* b) const {
-    // Si difieren en número de piezas, son incompatibles (no deberían existir en la misma tabla).
-    if (a->getNumPiezas() != b->getNumPiezas()) return false;
-
-    // El bitmask de piezas salidas es la primera discriminante rápida:
-    // si difieren, los estados son claramente distintos sin revisar posiciones.
-    if (a->getPiezasSalidas() != b->getPiezasSalidas()) return false;
-
-    // Comparar la posición actual de cada pieza.
-    // stepUsed no se compara intencionalmente: dos estados con la misma configuración
-    // pero diferente costo representan el mismo nodo del grafo; A* descarta el más costoso.
-    for (int i = 0; i < a->getNumPiezas(); i++) {
-        if (a->getPosPiezas()[i].x != b->getPosPiezas()[i].x ||
-            a->getPosPiezas()[i].y != b->getPosPiezas()[i].y)
-            return false;
-    }
-
-    // Comparar el estado dinámico de las compuertas (pueden estar en colores distintos).
-    for (int i = 0; i < a->getNumCompuertas(); i++) {
-        if (a->getColorCompuertas()[i] != b->getColorCompuertas()[i])
-            return false;
-    }
-
-    // Comparar el largo actual de cada salida (pueden haber oscilado a valores distintos).
-    for (int i = 0; i < a->getNumSalidas(); i++) {
-        if (a->getLargoSalidas()[i] != b->getLargoSalidas()[i])
-            return false;
-    }
-
-    return true;
+    // La igualdad estructural de estado (posiciones + bitmask de salidas + fase del ciclo
+    // dinámico) vive dentro de Estado para evitar exponer el formato empacado de posPiezas.
+    return a->igualA(*b);
 }
 
 void TablaHash::rehash() {

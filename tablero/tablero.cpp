@@ -104,7 +104,7 @@ int Tablero::getStepLimit()    const { return stepLimit; }
 
 bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
     Pieza& pieza = piezas[id];
-    coordenada pos = estado.getPosPiezas()[id];
+    coordenada pos = estado.getPosPieza(id);
 
     // Iterar sobre todas las celdas del bounding box de la pieza.
     // Solo procesamos las celdas que realmente forman parte de la pieza (getCelda == true).
@@ -170,7 +170,7 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
 
 bool Tablero::piezaPuedeSalir(int id, const Estado& estado) {
     Pieza& pieza = piezas[id];
-    coordenada pos = estado.getPosPiezas()[id];
+    coordenada pos = estado.getPosPieza(id);
     int pw = pieza.getAncho();
     int ph = pieza.getAlto();
 
@@ -268,24 +268,42 @@ int Tablero::calcularLargoSalida(int idx, const Estado& estado) const {
         return s.getLf() - (pos - rango); // fase de decrecimiento
 }
 
+// gcd / lcm sin STL para calcular el período global de las dinámicas.
+// Se usa abajo en crearEstadoInicial.
+static long long gcdLL(long long a, long long b) {
+    if (a < 0) a = -a;
+    if (b < 0) b = -b;
+    while (b != 0) { long long t = a % b; a = b; b = t; }
+    return a == 0 ? 1 : a;
+}
+static long long lcmLL(long long a, long long b) {
+    if (a == 0 || b == 0) return 1;
+    return (a / gcdLL(a, b)) * b;
+}
+
 Estado* Tablero::crearEstadoInicial() const {
-    // Copiar las posiciones iniciales de cada pieza desde el Tablero.
+    // Calcular el período de las dinámicas: LCM de los ciclos de cada compuerta y salida
+    // oscilante. Sirve para que Estado::igualA() distinga estados con misma posición
+    // pero distinta fase del ciclo (sin tener que cachear los colores/largos por estado).
+    long long periodo = 1;
+    for (int i = 0; i < numCompuertas; i++) {
+        Compuerta& c = compuertas[i];
+        if (c.getPaso() == 0) continue; // estática
+        long long ciclo = (long long)(c.getCf() - c.getCi() + 1) * c.getPaso();
+        if (ciclo > 1) periodo = lcmLL(periodo, ciclo);
+    }
+    for (int i = 0; i < numSalidas; i++) {
+        Salida& s = salidas[i];
+        if (s.getPaso() == 0 || s.getLi() == s.getLf()) continue; // estática
+        long long ciclo = 2LL * (s.getLf() - s.getLi()) * s.getPaso();
+        if (ciclo > 1) periodo = lcmLL(periodo, ciclo);
+    }
+    Estado::dynamicPeriod = (int)periodo;
+
     coordenada* posiciones = new coordenada[numPiezas];
     for (int i = 0; i < numPiezas; i++)
         posiciones[i] = piezas[i].getPosInicial();
 
-    // El color inicial de cada compuerta es Ci (el que tiene en el step 0).
-    int* coloresCompuertas = new int[numCompuertas];
-    for (int i = 0; i < numCompuertas; i++)
-        coloresCompuertas[i] = compuertas[i].getCi();
-
-    // El largo inicial de cada salida es Li (el que tiene en el step 0).
-    short* largosSalidas = new short[numSalidas];
-    for (int i = 0; i < numSalidas; i++)
-        largosSalidas[i] = salidas[i].getLi();
-
-    // Construir la matriz de ocupación inicial: -1 en todas las celdas, luego
-    // marcar las celdas que ocupa cada pieza con su id.
     short* ocupacion = new short[w * h];
     for (int i = 0; i < w * h; i++)
         ocupacion[i] = -1;
@@ -303,16 +321,10 @@ Estado* Tablero::crearEstadoInicial() const {
         }
     }
 
-    // El constructor de Estado copia internamente todos los arreglos,
-    // por lo que podemos liberar los temporales justo después.
-    Estado* estado = new Estado(numPiezas, numCompuertas, numSalidas,
-                                posiciones, coloresCompuertas, largosSalidas,
-                                0, 0, 0, w, h, nullptr, "", ocupacion);
+    Estado* estado = new Estado(numPiezas, posiciones, 0u, 0, 0, w, h,
+                                nullptr, 0, ocupacion);
     delete[] posiciones;
-    delete[] coloresCompuertas;
-    delete[] largosSalidas;
     delete[] ocupacion;
-
     return estado;
 }
 

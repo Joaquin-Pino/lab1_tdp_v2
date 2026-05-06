@@ -18,10 +18,8 @@ void verificar(bool cond, const char* nombre) {
 
 Estado* crearEstado(int x, int y, int step = 0) {
     coordenada pos[1] = {{x, y}};
-    int   cc[1] = {0};
-    short ls[1] = {0};
     short oc[1]; oc[0] = -1;
-    Estado* e = new Estado(1, 0, 0, pos, cc, ls, 0u, step, 0, 1, 1, nullptr, "", oc);
+    Estado* e = new Estado(1, pos, 0u, step, 0, 1, 1, nullptr, 0, oc);
     return e;
 }
 

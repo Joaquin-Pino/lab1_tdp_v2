@@ -104,7 +104,11 @@ void testSolucionVerificable() {
     // construir string de movimientos desde la solución
     char secuencia[2000] = "";
     for (int i = 1; solucion[i] != nullptr; i++) {
-        const char* mov = solucion[i]->getMovimiento();
+        char dir; int extId;
+        solucion[i]->decodificarMovimiento(dir, extId);
+        char mov[16];
+        if (dir == 'S') snprintf(mov, sizeof(mov), "S%d", extId);
+        else            snprintf(mov, sizeof(mov), "%c%d,1", dir, extId);
         if (strlen(secuencia) > 0) strcat(secuencia, " ");
         strncat(secuencia, mov, sizeof(secuencia) - strlen(secuencia) - 1);
     }
@@ -135,8 +139,8 @@ void testEstadoInicial() {
     verificar(e->getStepUsed() == 0,  "stepUsed inicial = 0");
     verificar(e->getPiezasSalidas() == 0, "ninguna pieza salida");
     verificar(!e->jugoTerminado(tablero->getNumPiezas()), "juego no terminado");
-    verificar(e->getPosPiezas()[0].x == 1, "pieza x=1");
-    verificar(e->getPosPiezas()[0].y == 1, "pieza y=1");
+    verificar(e->getPosPieza(0).x == 1, "pieza x=1");
+    verificar(e->getPosPieza(0).y == 1, "pieza y=1");
 
     // no liberar estadoInicial — lo libera el solver
     Solver solver(tablero);

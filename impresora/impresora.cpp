@@ -41,8 +41,9 @@ void Impresora::imprimirEstado(const Tablero& tablero, const Estado& estado) {
     // Las piezas salidas no se renderizan; el resto se superpone sobre la matriz.
     for (int i = 0; i < tablero.getNumPiezas(); i++) {
         if (estado.piezaYaSalio(i)) continue;
-        int x = estado.getPosPiezas()[i].x;
-        int y = estado.getPosPiezas()[i].y;
+        coordenada pp = estado.getPosPieza(i);
+        int x = pp.x;
+        int y = pp.y;
         for (int j = 0; j < piezas[i].getAlto(); j++) {
             for (int k = 0; k < piezas[i].getAncho(); k++) {
                 if (!piezas[i].getCelda(k, j)) continue;
@@ -105,8 +106,10 @@ void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
     int piezaAcum = -1;
     int countAcum = 0;
     for (int i = 1; i < numPasos; i++) {
-        const char* mov = solucion[i]->getMovimiento();
-        if (mov[0] == 'S') {
+        char dir;
+        int pieza;
+        solucion[i]->decodificarMovimiento(dir, pieza);
+        if (dir == 'S') {
             // Salida interrumpe la acumulación del slide anterior
             if (countAcum > 0) {
                 std::cout << dirAcum << piezaAcum << "," << countAcum;
@@ -114,28 +117,20 @@ void Impresora::imprimirSolucion(const Tablero& tablero, Estado** solucion){
                 dirAcum = 0;
                 piezaAcum = -1;
             }
-            std::cout << mov;
+            std::cout << "S" << pieza;
             continue;
         }
-        char dir = mov[0];
-        int pieza = -1;
-        int dist = 1;
-        const char* coma = strchr(mov, ',');
-        if (coma) {
-            pieza = atoi(mov + 1);
-            dist = atoi(coma + 1);
-        } else {
-            pieza = atoi(mov + 1);
-        }
 
+        // Cada Estado representa un slide de 1 celda; consolidamos consecutivos
+        // de la misma (dir, pieza) en un único token "<dir><pieza>,<count>".
         if (dir == dirAcum && pieza == piezaAcum) {
-            countAcum += dist;
+            countAcum++;
         } else {
             if (countAcum > 0)
                 std::cout << dirAcum << piezaAcum << "," << countAcum;
             dirAcum = dir;
             piezaAcum = pieza;
-            countAcum = dist;
+            countAcum = 1;
         }
     }
     if (countAcum > 0)
@@ -160,11 +155,16 @@ void Impresora::imprimirSolucionPasoAPaso(const Tablero& tablero, Estado** soluc
     imprimirSolucion(tablero, solucion);
 
     for (int i = 0; i < numPasos; i++) {
-        if (i == 0)
+        if (i == 0) {
             std::cout << "Estado inicial:" << std::endl;
-        else
-            std::cout << "Paso " << i << " - "
-                      << solucion[i]->getMovimiento() << ":" << std::endl;
+        } else {
+            char dir;
+            int pieza;
+            solucion[i]->decodificarMovimiento(dir, pieza);
+            std::cout << "Paso " << i << " - " << dir << pieza;
+            if (dir != 'S') std::cout << ",1";
+            std::cout << ":" << std::endl;
+        }
         imprimirEstado(tablero, *solucion[i]);
     }
 }

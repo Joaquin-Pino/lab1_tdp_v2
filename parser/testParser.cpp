@@ -80,9 +80,10 @@ int main() {
             // estado inicial
             Estado* e = t->crearEstadoInicial();
             verificar(e != nullptr,  "estado inicial no es null");
-            verificar(e->getPosPiezas()[0].x == 1, "estado: pieza x = 1");
-            verificar(e->getPosPiezas()[0].y == 1, "estado: pieza y = 1");
-            verificar(e->getLargoSalidas()[0] == 4,"estado: largo salida = Li = 4");
+            verificar(e->getPosPieza(0).x == 1, "estado: pieza x = 1");
+            verificar(e->getPosPieza(0).y == 1, "estado: pieza y = 1");
+            // El largo dinámico de la salida ya no se cachea en el estado: se calcula on-demand.
+            verificar(t->calcularLargoSalida(0, *e) == 4, "estado: largo salida = Li = 4");
             verificar(!e->piezaYaSalio(0), "ninguna pieza ha salido");
             verificar(!e->jugoTerminado(1), "juego no terminado");
 
