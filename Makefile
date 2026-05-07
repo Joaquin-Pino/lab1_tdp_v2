@@ -1,5 +1,8 @@
 CXX = g++
-CXXFLAGS = -c -O2 -Wall -Wextra
+# Optimizaciones extremas para compilación
+CXXFLAGS = -c -O3 -march=native -flto -Wall -Wextra
+# Optimizaciones extremas para linkeo
+LDFLAGS = -O3 -march=native -flto
 
 PIEZA       = pieza
 SALIDA      = salida
@@ -14,6 +17,8 @@ IMPRESORA   = impresora
 VERIFICADOR = verificador
 
 all: testPieza testSalida testCompuerta testEstado testMinHeap testTablaHash testTablero testParser testSolver testImpresora testVerificador main
+
+# ── objetos ──────────────────────────────────────────
 
 pieza.o: $(PIEZA)/pieza.cpp $(PIEZA)/pieza.h
 	$(CXX) $(CXXFLAGS) $(PIEZA)/pieza.cpp -o pieza.o
@@ -91,42 +96,43 @@ testVerificador.o: $(VERIFICADOR)/testVerificador.cpp
 OBJS = pieza.o salida.o compuerta.o estado.o minheap.o tablaHash.o tablero.o parser.o solver.o impresora.o verificador.o
 
 # ── binarios de test ─────────────────────────────────
+# Nota: Ahora todas estas reglas incluyen $(LDFLAGS)
 
 testPieza: pieza.o testPieza.o
-	$(CXX) pieza.o testPieza.o -o testPieza
+	$(CXX) $(LDFLAGS) pieza.o testPieza.o -o testPieza
 
 testSalida: salida.o pieza.o testSalida.o
-	$(CXX) salida.o pieza.o testSalida.o -o testSalida
+	$(CXX) $(LDFLAGS) salida.o pieza.o testSalida.o -o testSalida
 
 testCompuerta: compuerta.o pieza.o testCompuerta.o
-	$(CXX) compuerta.o pieza.o testCompuerta.o -o testCompuerta
+	$(CXX) $(LDFLAGS) compuerta.o pieza.o testCompuerta.o -o testCompuerta
 
 testEstado: estado.o pieza.o testEstado.o
-	$(CXX) estado.o pieza.o testEstado.o -o testEstado
+	$(CXX) $(LDFLAGS) estado.o pieza.o testEstado.o -o testEstado
 
 testMinHeap: pieza.o salida.o compuerta.o estado.o minheap.o testMinHeap.o
-	$(CXX) pieza.o salida.o compuerta.o estado.o minheap.o testMinHeap.o -o testMinHeap
+	$(CXX) $(LDFLAGS) pieza.o salida.o compuerta.o estado.o minheap.o testMinHeap.o -o testMinHeap
 
 testTablaHash: pieza.o salida.o compuerta.o estado.o tablaHash.o testTablaHash.o
-	$(CXX) pieza.o salida.o compuerta.o estado.o tablaHash.o testTablaHash.o -o testTablaHash
+	$(CXX) $(LDFLAGS) pieza.o salida.o compuerta.o estado.o tablaHash.o testTablaHash.o -o testTablaHash
 
 testTablero: $(OBJS) testTablero.o
-	$(CXX) $(OBJS) testTablero.o -o testTablero
+	$(CXX) $(LDFLAGS) $(OBJS) testTablero.o -o testTablero
 
 testParser: $(OBJS) testParser.o
-	$(CXX) $(OBJS) testParser.o -o testParser
+	$(CXX) $(LDFLAGS) $(OBJS) testParser.o -o testParser
 
 testSolver: $(OBJS) testSolver.o
-	$(CXX) $(OBJS) testSolver.o -o testSolver
+	$(CXX) $(LDFLAGS) $(OBJS) testSolver.o -o testSolver
 
 testImpresora: $(OBJS) testImpresora.o
-	$(CXX) $(OBJS) testImpresora.o -o testImpresora
+	$(CXX) $(LDFLAGS) $(OBJS) testImpresora.o -o testImpresora
 
 testVerificador: $(OBJS) testVerificador.o
-	$(CXX) $(OBJS) testVerificador.o -o testVerificador
+	$(CXX) $(LDFLAGS) $(OBJS) testVerificador.o -o testVerificador
 
 main: $(OBJS) main.o
-	$(CXX) $(OBJS) main.o -o main
+	$(CXX) $(LDFLAGS) $(OBJS) main.o -o main
 
 # ── valgrind ─────────────────────────────────────────
 

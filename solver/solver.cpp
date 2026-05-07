@@ -15,15 +15,32 @@ Solver::Solver(Tablero* t)
     closedSet = new TablaHash(100003); // primo grande para distribuir bien los hashes iniciales
     vecinosTemp = new Estado*[maxVecinos];
 
-    // Determinar si el mapa es estático: sin compuertas y sin salidas oscilantes.
-    // Solo en mapas estáticos se puede aplicar la poda de movimientos redundantes
-    // (mover una pieza y deshacer el movimiento). En mapas con dinámica, esa "vuelta"
-    // puede ser necesaria para que cambie el color de una compuerta o el largo de una salida.
-    aplicarPodaRedundante = (t->getNumCompuertas() == 0);
+    // Poda de movimientos redundantes: deshacer el movimiento previo de la misma pieza
+    // siempre lleva al estado anterior, salvo que el step intermedio haya cambiado un
+    // elemento dinámico (color de compuerta o largo de salida).
+    //
+    // Un elemento dinámico cambia entre dos steps consecutivos solo si su `paso` es 1
+    // (cualquier movimiento avanza el ciclo). Con `paso >= 2` puede ocurrir que necesitemos
+    // "perder steps" esperando un cambio, en cuyo caso podríamos requerir back-and-forth.
+    // Con `paso == 0` el elemento es estático y nunca cambia.
+    //
+    // Por lo tanto, la poda es segura cuando todos los elementos dinámicos tienen
+    // `paso == 0` (estáticos) o `paso == 1` (cambian en cada step y se pueden avanzar
+    // moviendo cualquier otra pieza). Solo se desactiva si hay algún elemento con
+    // `paso >= 2`.
+    aplicarPodaRedundante = true;
+    Compuerta* compuertas = t->getCompuertas();
+    for (int i = 0; i < t->getNumCompuertas(); i++) {
+        if (compuertas[i].getPaso() >= 2) {
+            aplicarPodaRedundante = false;
+            break;
+        }
+    }
     if (aplicarPodaRedundante) {
         Salida* salidas = t->getSalidas();
         for (int i = 0; i < t->getNumSalidas(); i++) {
-            if (salidas[i].getLi() != salidas[i].getLf()) {
+            // Solo importa si la salida realmente oscila (Li != Lf).
+            if (salidas[i].getLi() != salidas[i].getLf() && salidas[i].getPaso() >= 2) {
                 aplicarPodaRedundante = false;
                 break;
             }
@@ -92,9 +109,11 @@ int Solver::generarVecinos(Estado* actual) {
 
             vecinosTemp[count++] = vecino;
             if (count >= maxVecinos) return count; // protección contra overflow del buffer
+            break;
             continue;
         }
 
+        
         // Intentar mover la pieza 1 celda en cada dirección.
         for (int d = 0; d < 4; d++) {
             // Poda: no generar el movimiento que deshace el anterior de la misma pieza
@@ -105,10 +124,12 @@ int Solver::generarVecinos(Estado* actual) {
 
             Estado* vecino = actual->clonarYMover(id, dx[d], dy[d], pieza, w);
 
+
             char mov[10];
             snprintf(mov, 10, "%c%d,1", dirChar[d], pieza.getId()); // formato: "D<idExterno>,1"
             prepararVecino(vecino, actual, mov);
-
+            
+        
             vecinosTemp[count++] = vecino;
             if (count >= maxVecinos) return count;
         }
@@ -239,56 +260,74 @@ Estado** Solver::resolver(Estado* estadoInicial) {
 
 int Solver::calcularHeuristica(const Estado& estado) const {
     int total = 0;
+    int W = tablero->getW();
+    int H = tablero->getH();
 
     for (int i = 0; i < tablero->getNumPiezas(); i++) {
-        if (estado.piezaYaSalio(i)) continue; // pieza ya fuera, no contribuye al costo restante
+        if (estado.piezaYaSalio(i)) continue;
 
         coordenada pos = estado.getPosPiezas()[i];
         Pieza& pieza = tablero->getPiezas()[i];
         int pw = pieza.getAncho();
         int ph = pieza.getAlto();
 
-        int mejorCosto = -1; // -1 significa que no se encontró ninguna salida compatible aún
+        int mejorCosto = -1;
 
         for (int j = 0; j < tablero->getNumSalidas(); j++) {
             Salida& salida = tablero->getSalidas()[j];
-            if (salida.getColor() != pieza.getColor()) continue;        // color incompatible
-            if (!tablero->piezaPodriaSalir(pieza, salida)) continue;    // pieza nunca cabrá
+            
+            if (salida.getColor() != pieza.getColor()) continue;
+            if (!tablero->piezaPodriaSalir(pieza, salida)) continue;
 
             coordenada ps = salida.getPos();
+            
+            // 1. Distancia Base Mejorada (Incorporando el Span LF de la salida)
+            // Usamos la lógica de la cota admisible para obtener una base geométrica 
+            // perfecta desde el bounding box de la pieza hacia el span de la salida.
+            int L = (salida.getLf() > salida.getLi()) ? salida.getLf() : salida.getLi();
+            int perpCost = 0, parCost = 0;
 
-            // Calcular la distancia Manhattan desde el BORDE de la pieza hasta la salida,
-            // no desde su centro. Si la salida está dentro del bounding box, la distancia es 0.
-            int dx = 0, dy = 0;
-            if  (ps.x < pos.x) {      
-                dx = pos.x - ps.x;// salida a la izquierda
-            } else if (ps.x > pos.x+pw-1)  {
-                dx = ps.x - (pos.x + pw-1); // salida a la derecha
+            if (salida.getEsHorizontal()) {
+                int adjRow = (ps.y == 0) ? 1 : ((ps.y == H - 1) ? H - 2 : ps.y);
+                
+                if (pos.y > adjRow) perpCost = pos.y - adjRow;
+                else if (pos.y + ph - 1 < adjRow) perpCost = adjRow - (pos.y + ph - 1);
+
+                if (pos.x < ps.x) parCost = ps.x - pos.x;
+                else if (pos.x + pw - 1 > ps.x + L - 1) parCost = (pos.x + pw - 1) - (ps.x + L - 1);
+            } else {
+                int adjCol = (ps.x == 0) ? 1 : ((ps.x == W - 1) ? W - 2 : ps.x);
+                
+                if (pos.x > adjCol) perpCost = pos.x - adjCol;
+                else if (pos.x + pw - 1 < adjCol) perpCost = adjCol - (pos.x + pw - 1);
+
+                if (pos.y < ps.y) parCost = ps.y - pos.y;
+                else if (pos.y + ph - 1 > ps.y + L - 1) parCost = (pos.y + ph - 1) - (ps.y + L - 1);
             }
 
-            if (ps.y < pos.y) {
-                dy = pos.y - ps.y;  // salida arriba
-            } else if (ps.y > pos.y+ph-1)  {
-                dy = ps.y - (pos.y + ph-1); // salida abajo
-            }
+            int distBase = perpCost + parCost;
 
-            int dist = dx + dy;
-
-            // Sumar penalización por piezas que bloquean el camino hacia esta salida.
-            // Se divide entre 2 porque cada pieza bloqueante ya está siendo contada
-            // en su propia heurística, y contarla doble sobreestimaría el costo total.
+            // 2. Conflicto Lineal Adaptado (Penalización Informada)
             int bloqueos = contarBloqueos(i, pos, ps, estado);
-            ///int bloqueos = 0;
-            int costo    = dist + bloqueos / 2;
+            int penalizacion = bloqueos / 2;
 
-            // Quedarse con la salida que da el menor costo estimado.
-            if (mejorCosto == -1 || costo < mejorCosto)
+            // Detección de "Conflicto en Meta" (Linear Conflict): 
+            // Si la pieza ya está en la fila/columna adyacente a la salida (distBase == 0) 
+            // pero el raycast detecta obstáculos (bloqueos > 0), estamos ante un deadlock local.
+            // Sumar +2 es matemáticamente seguro porque despejar el bloqueo cuesta >= 1
+            // y avanzar la pieza actual a la meta cuesta >= 1.
+            if (distBase == 0 && bloqueos > 0) {
+                penalizacion += 2; 
+            }
+
+            int costo = distBase + penalizacion;
+
+            if (mejorCosto == -1 || costo < mejorCosto) {
                 mejorCosto = costo;
+            }
         }
 
-        // Si no hay ninguna salida viable, contribuir con 0 (mejor que bloquear la búsqueda).
         if (mejorCosto == -1) mejorCosto = 0;
-
         total += mejorCosto;
     }
     return total;

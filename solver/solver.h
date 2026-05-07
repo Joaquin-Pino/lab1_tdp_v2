@@ -61,6 +61,7 @@ public:
     Solver& operator=(const Solver&) = delete;
     ~Solver();
 
+    bool esDeadlock(int idPieza, const Estado* vecino);
     // Ejecuta A* desde estadoInicial. Toma ownership de estadoInicial.
     // Devuelve un arreglo de Estado* (terminado en nullptr) con el camino solución,
     // o nullptr si no existe solución dentro del stepLimit.
