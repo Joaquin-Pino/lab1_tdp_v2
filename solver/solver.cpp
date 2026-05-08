@@ -16,30 +16,16 @@ Solver::Solver(Tablero* t)
     vecinosTemp = new Estado*[maxVecinos];
 
     // Poda de movimientos redundantes: deshacer el movimiento previo de la misma pieza
-    // siempre lleva al estado anterior, salvo que el step intermedio haya cambiado un
-    // elemento dinámico (color de compuerta o largo de salida).
-    //
-    // Un elemento dinámico cambia entre dos steps consecutivos solo si su `paso` es 1
-    // (cualquier movimiento avanza el ciclo). Con `paso >= 2` puede ocurrir que necesitemos
-    // "perder steps" esperando un cambio, en cuyo caso podríamos requerir back-and-forth.
-    // Con `paso == 0` el elemento es estático y nunca cambia.
-    //
-    // Por lo tanto, la poda es segura cuando todos los elementos dinámicos tienen
-    // `paso == 0` (estáticos) o `paso == 1` (cambian en cada step y se pueden avanzar
-    // moviendo cualquier otra pieza). Solo se desactiva si hay algún elemento con
-    // `paso >= 2`.
+    // siempre lleva al estado anterior, SALVO cuando hay compuertas (los movimientos de portal
+    // saltan más de 1 celda, por lo que mover en dirección opuesta no regresa al mismo estado)
+    // o cuando hay elementos dinámicos con paso >= 2.
     aplicarPodaRedundante = true;
-    Compuerta* compuertas = t->getCompuertas();
-    for (int i = 0; i < t->getNumCompuertas(); i++) {
-        if (compuertas[i].getPaso() >= 2) {
-            aplicarPodaRedundante = false;
-            break;
-        }
+    if (t->getNumCompuertas() > 0) {
+        aplicarPodaRedundante = false;
     }
     if (aplicarPodaRedundante) {
         Salida* salidas = t->getSalidas();
         for (int i = 0; i < t->getNumSalidas(); i++) {
-            // Solo importa si la salida realmente oscila (Li != Lf).
             if (salidas[i].getLi() != salidas[i].getLf() && salidas[i].getPaso() >= 2) {
                 aplicarPodaRedundante = false;
                 break;
@@ -113,23 +99,25 @@ int Solver::generarVecinos(Estado* actual) {
             continue;
         }
 
-        
-        // Intentar mover la pieza 1 celda en cada dirección.
+        // Intentar mover la pieza 1 celda en cada dirección (o portal si hay compuerta).
         for (int d = 0; d < 4; d++) {
-            // Poda: no generar el movimiento que deshace el anterior de la misma pieza
-            // (solo se aplica en mapas estáticos, ver Solver::esMovimientoRedundante).
             if (esMovimientoRedundante(id, dirChar[d], actual)) continue;
 
-            if (!tablero->piezaPuedeMoverse(id, dirs[d], *actual)) continue;
+            int moveX = dx[d], moveY = dy[d];
+            if (!tablero->piezaPuedeMoverse(id, dirs[d], *actual)) {
+                // Intentar portal a través de compuerta
+                int dxSalto, dySalto;
+                if (!tablero->piezaPuedeCruzarCompuerta(id, dirs[d], *actual, dxSalto, dySalto)) continue;
+                moveX = dxSalto;
+                moveY = dySalto;
+            }
 
-            Estado* vecino = actual->clonarYMover(id, dx[d], dy[d], pieza, w);
-
+            Estado* vecino = actual->clonarYMover(id, moveX, moveY, pieza, w);
 
             char mov[10];
-            snprintf(mov, 10, "%c%d,1", dirChar[d], pieza.getId()); // formato: "D<idExterno>,1"
+            snprintf(mov, 10, "%c%d,1", dirChar[d], pieza.getId());
             prepararVecino(vecino, actual, mov);
-            
-        
+
             vecinosTemp[count++] = vecino;
             if (count >= maxVecinos) return count;
         }
@@ -166,7 +154,8 @@ Estado** Solver::resolver(Estado* estadoInicial) {
     nodosGenerados = 1; // el estado inicial cuenta como el primer nodo generado
     nodosVisitados = 0;
 
-    // Poda inicial barata: si la cota admisible ya supera el stepLimit, no hay solución posible.
+    // Poda inicial: si la cota admisible ya supera el stepLimit, no hay solución posible.
+    bool hayCompuertas = tablero->getNumCompuertas() > 0;
     if (cotaInferiorAdmisible(*estadoInicial) > tablero->getStepLimit()) {
         std::cout << "Nodos generados: " << nodosGenerados
                   << " | Nodos visitados: " << nodosVisitados << std::endl;
@@ -232,10 +221,9 @@ Estado** Solver::resolver(Estado* estadoInicial) {
                 delete vecinosTemp[i];
                 continue;
             }
-            // Poda por f admisible: refuerza la anterior. Estrictamente segura (la cota
-            // admisible nunca sobreestima). Útil en estados donde la heurística informada
-            // sobreestima MENOS que `margen` y aún así no se llega a meta dentro del presupuesto.
-            if (vecinosTemp[i]->getStepUsed()
+            // Poda por f admisible (solo si no hay compuertas: con portales la cota puede
+            // sobreestimar y descartar estados alcanzables con un camino más corto).
+            if (!hayCompuertas && vecinosTemp[i]->getStepUsed()
                 + cotaInferiorAdmisible(*vecinosTemp[i]) > tablero->getStepLimit()) {
                 delete vecinosTemp[i];
                 continue;

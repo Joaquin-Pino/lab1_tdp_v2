@@ -68,8 +68,15 @@ public:
     int getStepLimit() const;
 
     // Verifica si la pieza `id` puede moverse 1 celda en la dirección `dir` en el estado dado.
-    // Chequea límites del tablero, ocupación por otras piezas, paredes y compuertas.
+    // Chequea límites del tablero, ocupación por otras piezas y paredes. Las compuertas son
+    // impassables con este método; usar piezaPuedeCruzarCompuerta para el cruce de portal.
     bool piezaPuedeMoverse(int id, direccion dir, const Estado& estado);
+
+    // Verifica si la pieza `id` puede cruzar una compuerta en la dirección `dir` via portal:
+    // la compuerta debe estar en el próximo paso, aceptar la pieza (color y tamaño),
+    // y haber espacio libre del otro lado. Si puede, devuelve el desplazamiento (dxSalto, dySalto)
+    // para teletransportar la pieza justo al otro lado de la compuerta. Cuesta 1 step.
+    bool piezaPuedeCruzarCompuerta(int id, direccion dir, const Estado& estado, int& dxSalto, int& dySalto);
 
     // Verifica si la pieza `id` está adyacente a una salida válida y puede salir ahora.
     // Examina los 4 bordes de la pieza en busca de una celda de salida compatible.

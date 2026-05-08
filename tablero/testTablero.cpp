@@ -265,6 +265,94 @@ void testConParser() {
 }
 
 // ─────────────────────────────────────────
+// Tablero 8×3 con una compuerta vertical fija de color 'a' en (3,1).
+// Pieza 'a' 1×1 empieza en (2,1). Se usa para probar el portal.
+void testPiezaPuedeCruzarCompuerta() {
+    std::cout << "\n-- piezaPuedeCruzarCompuerta --" << std::endl;
+
+    int W = 8, H = 3;
+    celda* mat = new celda[W * H];
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++)
+            mat[y*W+x] = {(y==0 || y==H-1 || x==0 || x==W-1) ? PARED : VACIA, -1};
+    mat[1*W+3] = {COMPUERTA, 0};
+
+    bool* g = new bool[1]{true};
+    Pieza* piezas = new Pieza[1];
+    piezas[0] = Pieza(1, 1, 1, 'a', {2, 1}, g); // 1×1, color='a', empieza en (2,1)
+
+    Salida*    salidas = new Salida[0];
+    Compuerta* comp    = new Compuerta[1];
+    comp[0] = Compuerta(0, {3, 1}, 1, true, 'a', 'a', 0); // vertical, fija, color 'a'
+
+    Tablero t(mat, piezas, salidas, comp, 1, 0, 1, W, H, 50);
+
+    // --- portal DERECHA: pieza en (2,1), compuerta en (3,1) ---
+    {
+        Estado* e = t.crearEstadoInicial();
+
+        verificar(!t.piezaPuedeMoverse(0, DERECHA, *e),
+                  "compuerta bloquea movimiento normal DERECHA");
+
+        int dx = 0, dy = 0;
+        verificar(t.piezaPuedeCruzarCompuerta(0, DERECHA, *e, dx, dy),
+                  "portal DERECHA válido: compuerta 'a' acepta pieza 'a'");
+        verificar(dx == 2 && dy == 0,
+                  "portal DERECHA: dx=2 (salta la celda de compuerta)");
+
+        // bloquear celda de aterrizaje (4,1): el portal no puede completarse
+        e->getOcupacion()[1*W+4] = 99; // obstáculo simulado
+        verificar(!t.piezaPuedeCruzarCompuerta(0, DERECHA, *e, dx, dy),
+                  "portal bloqueado: celda destino ocupada");
+
+        delete e;
+    }
+
+    // tablero equivalente pero con compuerta de color 'b': pieza 'a' no puede cruzar
+    {
+        celda* mat2 = new celda[W * H];
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
+                mat2[y*W+x] = {(y==0||y==H-1||x==0||x==W-1) ? PARED : VACIA, -1};
+        mat2[1*W+3] = {COMPUERTA, 0};
+
+        bool* g2      = new bool[1]{true};
+        Pieza* piezas2 = new Pieza[1];
+        piezas2[0]    = Pieza(1, 1, 1, 'a', {2, 1}, g2);
+        Salida*    sal2  = new Salida[0];
+        Compuerta* comp2 = new Compuerta[1];
+        comp2[0] = Compuerta(0, {3, 1}, 1, true, 'b', 'b', 0); // compuerta fija color 'b'
+
+        Tablero t2(mat2, piezas2, sal2, comp2, 1, 0, 1, W, H, 50);
+        Estado* e2 = t2.crearEstadoInicial();
+
+        int dx = 0, dy = 0;
+        verificar(!t2.piezaPuedeCruzarCompuerta(0, DERECHA, *e2, dx, dy),
+                  "portal bloqueado: color de compuerta ('b') no coincide con pieza ('a')");
+        delete e2;
+    }
+
+    // --- portal IZQUIERDA: pieza en (4,1), compuerta en (3,1) ---
+    {
+        Estado* base = t.crearEstadoInicial();
+        // mover pieza de (2,1) a (4,1) sin pasar por validación
+        Estado* e = base->clonarYMover(0, 2, 0, t.getPiezas()[0], W);
+        delete base;
+
+        verificar(!t.piezaPuedeMoverse(0, IZQUIERDA, *e),
+                  "compuerta bloquea movimiento normal IZQUIERDA");
+
+        int dx = 0, dy = 0;
+        verificar(t.piezaPuedeCruzarCompuerta(0, IZQUIERDA, *e, dx, dy),
+                  "portal IZQUIERDA válido");
+        verificar(dx == -2 && dy == 0,
+                  "portal IZQUIERDA: dx=-2");
+
+        delete e;
+    }
+}
+
+// ─────────────────────────────────────────
 int main() {
     std::cout << "===== TEST TABLERO =====" << std::endl;
 
@@ -277,6 +365,7 @@ int main() {
     testCalcularColorCompuerta();
     testConstructorCopia();
     testConParser();
+    testPiezaPuedeCruzarCompuerta();
 
     std::cout << "\n===== RESULTADO =====" << std::endl;
     std::cout << "Pasados: " << testsPasados << std::endl;

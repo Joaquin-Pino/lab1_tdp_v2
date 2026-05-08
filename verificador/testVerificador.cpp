@@ -1,7 +1,9 @@
 // testVerificador.cpp
 #include "../verificador/verificador.h"
 #include "../parser/parser.h"
+#include "../solver/solver.h"
 #include <iostream>
+#include <cstring>
 
 int testsPasados = 0;
 int testsFallados = 0;
@@ -105,6 +107,56 @@ int main() {
     }
 
     delete tablero;
+
+    // ── portal con compuerta (ejemplo1.txt) ──────────────────────────────
+    // Verifica que el Verificador aplica correctamente el cruce por portal:
+    // usa el Solver para obtener una solución válida con compuerta y comprueba
+    // que la misma secuencia de movimientos la acepta el Verificador.
+    std::cout << "\n-- portal con compuerta (ejemplo1.txt) --" << std::endl;
+    {
+        Parser p2("ejemplo1.txt");
+        Tablero* t2 = p2.construirTablero();
+
+        if (!t2) {
+            std::cout << "  ejemplo1.txt no encontrado, saltando" << std::endl;
+        } else {
+            Verificador verif2(t2);
+
+            // obtener solución del solver
+            Estado* estadoS = t2->crearEstadoInicial();
+            Solver solver(t2);
+            Estado** sol = solver.resolver(estadoS);
+
+            verificar(sol != nullptr, "solver encuentra solución para mapa con compuerta");
+
+            if (sol) {
+                // construir string de movimientos
+                char seq[4000] = "";
+                for (int i = 1; sol[i] != nullptr; i++) {
+                    const char* m = sol[i]->getMovimiento();
+                    if (strlen(seq) > 0) strcat(seq, " ");
+                    strncat(seq, m, sizeof(seq) - strlen(seq) - 1);
+                }
+                delete[] sol;
+
+                // el verificador debe aceptar exactamente esa secuencia
+                Estado* eV = t2->crearEstadoInicial();
+                verificar(verif2.verificarSolucion(seq, eV),
+                          "secuencia con portal pasa el verificador");
+                delete eV;
+            }
+
+            // el verificador debe rechazar intentar sacar una pieza desde la posición inicial
+            {
+                Estado* eX = t2->crearEstadoInicial();
+                verificar(!verif2.verificarSolucion("S1", eX),
+                          "S1 desde posición inicial falla en mapa con compuerta");
+                delete eX;
+            }
+
+            delete t2;
+        }
+    }
 
     std::cout << "\n===== RESULTADO =====" << std::endl;
     std::cout << "Pasados: " << testsPasados << std::endl;

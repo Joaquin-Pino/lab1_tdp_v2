@@ -140,29 +140,9 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
             celda& c = matriz[fila * w + columna];
             if (c.tipo == PARED) return false;
 
-            if (c.tipo == COMPUERTA) {
-                // El color de la compuerta se evalúa al momento de llegada (stepUsed + 1),
-                // no al stepUsed actual, porque el movimiento incrementará el contador en 1.
-                Compuerta& cp = compuertas[c.id];
-                int colorActual;
-                if (cp.getPaso() == 0) {
-                    // Compuerta fija: siempre tiene el color inicial.
-                    colorActual = cp.getCi();
-                } else {
-                    // Calcular en qué punto del ciclo estará la compuerta tras el movimiento.
-                    int ciclo = cp.getCf() - cp.getCi() + 1;
-                    int pasoEval = estado.getStepUsed() + 1;
-                    int pc = pasoEval / cp.getPaso();
-                    colorActual = cp.getCi() + (pc % ciclo);
-                } 
-                
-                // El tamaño relevante es la dimensión perpendicular a la dirección de movimiento:
-                // movimiento vertical → la pieza debe caber en ancho; horizontal → en alto.
-                int tamano = (dir == ARRIBA || dir == ABAJO) ? pieza.getAncho() : pieza.getAlto();
-
-                if (!cp.aceptaBloque(pieza.getColor(), tamano, colorActual))
-                    return false;
-            }
+            // Las compuertas son impassables con movimiento normal de 1 celda.
+            // El cruce se hace con el movimiento de portal (piezaPuedeCruzarCompuerta).
+            if (c.tipo == COMPUERTA) return false;
 
             // verificar que la pieza no pase por salidas, las salidas de otros colores son paredes sólidas.
             if (c.tipo == SALIDA) {
@@ -322,6 +302,97 @@ Estado* Tablero::crearEstadoInicial() const {
     delete[] ocupacion;
 
     return estado;
+}
+
+bool Tablero::piezaPuedeCruzarCompuerta(int id, direccion dir, const Estado& estado, int& dxSalto, int& dySalto) {
+    Pieza& pieza = piezas[id];
+    coordenada pos = estado.getPosPiezas()[id];
+    int pw = pieza.getAncho(), ph = pieza.getAlto();
+    short* ocupacion = estado.getOcupacion();
+
+    int dx = 0, dy = 0;
+    switch (dir) {
+        case DERECHA:   dx = 1;  break;
+        case IZQUIERDA: dx = -1; break;
+        case ABAJO:     dy = 1;  break;
+        case ARRIBA:    dy = -1; break;
+    }
+
+    int compuertaId = -1;
+    int gatePos = -1; // columna (dx≠0) o fila (dy≠0) donde está la compuerta
+
+
+    if (!piezaPuedeMoverse(id, dir, estado)) return false;
+    // Verificar que el "próximo paso" en dirección dir sea válido:
+    // ninguna celda activa debe chocarse con una pared u otra pieza,
+    // y al menos una debe dar con una celda de compuerta.
+    for (int i = 0; i < ph; i++) {
+        for (int j = 0; j < pw; j++) {
+            if (!pieza.getCelda(j, i)) continue;
+
+            int nFila = pos.y + i + dy;
+            int nCol  = pos.x + j + dx;
+
+            if (nFila < 0 || nFila >= h || nCol < 0 || nCol >= w) return false;
+
+            short ocup = ocupacion[nFila * w + nCol];
+            if (ocup != -1 && ocup != id) return false; // otra pieza bloquea
+
+            celda& c = matriz[nFila * w + nCol];
+            if (c.tipo == COMPUERTA) {
+                compuertaId = c.id;
+                gatePos = (dx != 0) ? nCol : nFila;
+            }
+        }
+    }
+     // el movimiento normal ya está bloqueado
+
+    if (compuertaId == -1) return false; // no hay compuerta en el próximo paso
+
+    // Verificar que la compuerta acepta la pieza
+    Compuerta& cp = compuertas[compuertaId];
+    int colorActual;
+    if (cp.getPaso() == 0) {
+        colorActual = cp.getCi();
+    } else {
+        int ciclo = cp.getCf() - cp.getCi() + 1;
+        int pasoEval = estado.getStepUsed() + 1;
+        int pc = pasoEval / cp.getPaso();
+        colorActual = cp.getCi() + (pc % ciclo);
+    }
+    int tamano = (dir == ARRIBA || dir == ABAJO) ? pw : ph;
+    if (!cp.aceptaBloque(pieza.getColor(), tamano, colorActual)) return false;
+
+    // Calcular posición de aterrizaje: la pieza queda "pegada" a la compuerta del otro lado
+    int newPosX = pos.x, newPosY = pos.y;
+    if      (dx > 0) newPosX = gatePos + 1;      // borde izquierdo del bbox justo tras la compuerta
+    else if (dx < 0) newPosX = gatePos - pw;      // borde derecho del bbox justo antes de la compuerta (por la izquierda)
+    else if (dy > 0) newPosY = gatePos + 1;
+    else             newPosY = gatePos - ph;
+
+    // Verificar que la posición de aterrizaje es válida
+    for (int i = 0; i < ph; i++) {
+        for (int j = 0; j < pw; j++) {
+            if (!pieza.getCelda(j, i)) continue;
+
+            int nFila = newPosY + i;
+            int nCol  = newPosX + j;
+
+            if (nFila < 0 || nFila >= h || nCol < 0 || nCol >= w) return false;
+
+            short ocup = ocupacion[nFila * w + nCol];
+            if (ocup != -1 && ocup != id) return false;
+
+            celda& c = matriz[nFila * w + nCol];
+            if (c.tipo == PARED) return false;
+            if (c.tipo == COMPUERTA) return false; // no puede aterrizar dentro de otra compuerta
+            if (c.tipo == SALIDA && salidas[c.id].getColor() != pieza.getColor()) return false;
+        }
+    }
+
+    dxSalto = newPosX - pos.x;
+    dySalto = newPosY - pos.y;
+    return true;
 }
 
 void Tablero::imprimir() const {

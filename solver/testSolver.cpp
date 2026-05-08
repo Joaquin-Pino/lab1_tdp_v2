@@ -146,6 +146,55 @@ void testEstadoInicial() {
 }
 
 // ─────────────────────────────────────────
+// Carga ejemplo1.txt (mapa con compuerta dinámica), resuelve y verifica que la
+// solución encontrada es correcta (pasa el Verificador).
+void testSolucionConCompuerta() {
+    std::cout << "\n-- solución con compuerta (ejemplo1.txt) --" << std::endl;
+
+    Parser parser("ejemplo1.txt");
+    Tablero* tablero = parser.construirTablero();
+    if (!tablero) {
+        std::cout << "  ejemplo1.txt no encontrado, saltando" << std::endl;
+        return;
+    }
+
+    Estado* estadoInicial = tablero->crearEstadoInicial();
+
+    Solver solver(tablero);
+    Estado** solucion = solver.resolver(estadoInicial);
+
+    verificar(solucion != nullptr, "solver encuentra solución en mapa con compuerta");
+
+    if (solucion) {
+        int n = 0;
+        while (solucion[n] != nullptr) n++;
+
+        Estado* estadoFinal = solucion[n - 1];
+        verificar(estadoFinal->jugoTerminado(tablero->getNumPiezas()),
+                  "estado final: todas las piezas salieron (con compuerta)");
+        verificar(estadoFinal->getStepUsed() <= tablero->getStepLimit(),
+                  "solución con compuerta dentro del stepLimit");
+
+        // construir string de movimientos y verificarlo
+        char secuencia[4000] = "";
+        for (int i = 1; solucion[i] != nullptr; i++) {
+            const char* mov = solucion[i]->getMovimiento();
+            if (strlen(secuencia) > 0) strcat(secuencia, " ");
+            strncat(secuencia, mov, sizeof(secuencia) - strlen(secuencia) - 1);
+        }
+        delete[] solucion;
+
+        Estado* estadoVerif = tablero->crearEstadoInicial();
+        Verificador verif(tablero);
+        verificar(verif.verificarSolucion(secuencia, estadoVerif),
+                  "solución con compuerta pasa el Verificador");
+        delete estadoVerif;
+    }
+
+    delete tablero;
+}
+
+// ─────────────────────────────────────────
 int main() {
     std::cout << "===== TEST SOLVER =====" << std::endl;
 
@@ -153,6 +202,7 @@ int main() {
     testSimple1();
     testSinSolucion();
     testSolucionVerificable();
+    testSolucionConCompuerta();
 
     std::cout << "\n===== RESULTADO =====" << std::endl;
     std::cout << "Pasados: " << testsPasados << std::endl;

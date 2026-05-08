@@ -86,15 +86,18 @@ bool Verificador::aplicarMovimiento(Estado* estado, char dir, int pieza, int dis
     Pieza& p = tablero->getPiezas()[idxPieza];
     int w    = tablero->getW();
 
-    // Simular los `dist` pasos de 1 celda uno por uno.
-    // Esto permite validar cada paso individualmente y actualizar los elementos dinámicos
-    // en el momento correcto (igual que lo hace el Solver).
     for (int paso = 0; paso < dist; paso++) {
-        if (!tablero->piezaPuedeMoverse(idxPieza, d, *estado)) return false;
-        estado->moverPieza(idxPieza, dx, dy, p, w);
+        int moveX = dx, moveY = dy;
+        if (!tablero->piezaPuedeMoverse(idxPieza, d, *estado)) {
+            // Si el paso choca con una compuerta, intentar el cruce por portal.
+            int dxSalto, dySalto;
+            if (!tablero->piezaPuedeCruzarCompuerta(idxPieza, d, *estado, dxSalto, dySalto))
+                return false;
+            moveX = dxSalto;
+            moveY = dySalto;
+        }
+        estado->moverPieza(idxPieza, moveX, moveY, p, w);
 
-        // Actualizar compuertas y salidas después de cada paso individual,
-        // porque el stepUsed cambia en cada celda movida.
         for (int i = 0; i < tablero->getNumCompuertas(); i++)
             estado->actualizarCompuerta(i, tablero->calcularColorCompuerta(i, *estado));
         for (int i = 0; i < tablero->getNumSalidas(); i++)
