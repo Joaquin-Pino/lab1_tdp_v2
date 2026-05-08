@@ -154,12 +154,20 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
                     int pasoEval = estado.getStepUsed() + 1;
                     int pc = pasoEval / cp.getPaso();
                     colorActual = cp.getCi() + (pc % ciclo);
-                }
+                } 
+                
                 // El tamaño relevante es la dimensión perpendicular a la dirección de movimiento:
                 // movimiento vertical → la pieza debe caber en ancho; horizontal → en alto.
                 int tamano = (dir == ARRIBA || dir == ABAJO) ? pieza.getAncho() : pieza.getAlto();
 
                 if (!cp.aceptaBloque(pieza.getColor(), tamano, colorActual))
+                    return false;
+            }
+
+            // verificar que la pieza no pase por salidas, las salidas de otros colores son paredes sólidas.
+            if (c.tipo == SALIDA) {
+                Salida& s = salidas[c.id];
+                if (s.getColor() != pieza.getColor())
                     return false;
             }
         }
