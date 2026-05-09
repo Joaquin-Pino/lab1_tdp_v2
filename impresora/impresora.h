@@ -19,4 +19,8 @@ public:
 
     // Imprime la solución consolidada seguida del tablero tras cada movimiento individual.
     static void imprimirSolucionPasoAPaso(const Tablero& tablero, Estado** solucion);
+
+    // Reproduce la solución como un "video": limpia la pantalla entre cada paso
+    // y espera delayMs milisegundos entre frames.
+    static void visualizarSolucion(const Tablero& tablero, Estado** solucion, int delayMs = 300);
 };

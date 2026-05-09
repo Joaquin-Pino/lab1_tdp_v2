@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
+#include <unistd.h>
 
 void Impresora::imprimirTablero(const Tablero& Tablero){
     Tablero.imprimir();
@@ -61,7 +62,7 @@ void Impresora::imprimirEstado(const Tablero& tablero, const Estado& estado) {
         for (int j = 0; j < w; j++) {
             celda& c = matriz[i * w + j];
             switch (c.tipo) {
-                case VACIA:     std::cout << "."; break;
+                case VACIA:     std::cout << " "; break;
                 case PARED:     std::cout << "#"; break;
                 case SALIDA:
                     std::cout << (char)std::toupper(salidas[c.id].getColor());
@@ -166,5 +167,56 @@ void Impresora::imprimirSolucionPasoAPaso(const Tablero& tablero, Estado** soluc
             std::cout << "Paso " << i << " - "
                       << solucion[i]->getMovimiento() << ":" << std::endl;
         imprimirEstado(tablero, *solucion[i]);
+    }
+}
+
+void Impresora::visualizarSolucion(const Tablero& tablero, Estado** solucion, int delayMs) {
+    if (!solucion) {
+        std::cout << "No hay solucion para visualizar." << std::endl;
+        return;
+    }
+
+    int numPasos = 0;
+    while (solucion[numPasos] != nullptr) numPasos++;
+
+    if (numPasos == 0) {
+        std::cout << "No hay solucion para visualizar." << std::endl;
+        return;
+    }
+
+    // Precomputar string consolidado completo para mostrarlo en cada frame
+    // Reutilizamos la lógica de imprimirSolucion pero guardamos en un buffer.
+    char solucionStr[8192];
+    int pos = 0;
+    char dirAcum = 0;
+    int piezaAcum = -1;
+    int countAcum = 0;
+
+    if (countAcum > 0)
+        snprintf(solucionStr + pos, sizeof(solucionStr) - pos,
+                 "%c%d,%d", dirAcum, piezaAcum, countAcum);
+
+    for (int i = 0; i < numPasos; i++) {
+        // Limpiar pantalla y mover cursor al origen con secuencias ANSI
+        std::cout << "\033[H\033[2J\033[3J" << std::flush;
+
+        std::cout << "=== COLOR BLOCK JAM - Visualizacion ===" << "\n";
+        //std::cout << "Solucion: " << solucionStr << "\n\n";
+
+        if (i == 0)
+            std::cout << "Estado inicial  (0 / " << (numPasos - 1) << ")\n\n";
+        else
+            std::cout << "Paso " << i << " / " << (numPasos - 1)
+                      << "  ->  " << solucion[i]->getMovimiento() << "\n\n";
+
+        imprimirEstado(tablero, *solucion[i]);
+
+        if (i < numPasos - 1)
+            std::cout << "[" << delayMs << " ms/frame  |  Ctrl+C para salir]\n";
+        else
+            std::cout << "=== SOLUCION COMPLETA ===\n";
+
+        std::cout << std::flush;
+        usleep((useconds_t)delayMs * 1000);
     }
 }

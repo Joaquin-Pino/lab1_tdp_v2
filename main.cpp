@@ -8,15 +8,14 @@
 #include "verificador/verificador.h"
 
 void menuPrincipal() {
-    
-
     std::cout << "\n=== COLOR BLOCK JAM SOLVER ===" << std::endl;
     std::cout << "1. Cargar archivo de configuracion" << std::endl;
     std::cout << "2. Resolver" << std::endl;
     std::cout << "3. Mostrar tablero" << std::endl;
     std::cout << "4. Mostrar solucion paso a paso" << std::endl;
     std::cout << "5. Verificar secuencia de movimientos" << std::endl;
-    std::cout << "6. Salir" << std::endl;
+    std::cout << "6. Visualizar solucion (video)" << std::endl;
+    std::cout << "7. Salir" << std::endl;
     std::cout << "Opcion: ";
 }
 
@@ -55,7 +54,7 @@ int main(int argc, char* argv[]) {
 
     int opcion = 0;
 
-    while (opcion != 6) {
+    while (opcion != 7) {
         menuPrincipal();
         std::cin >> opcion; // TODO: validar input — si se ingresa un string, cin queda en mal estado
 
@@ -168,6 +167,26 @@ int main(int argc, char* argv[]) {
             }
 
             case 6: {
+                if (!tablero || !estadoInicial) {
+                    std::cout << "Primero cargue un archivo de configuracion." << std::endl;
+                    break;
+                }
+                if (!solucion) {
+                    std::cout << "Primero resuelva el tablero (opcion 2)." << std::endl;
+                    break;
+                }
+                std::cout << "Velocidad: 1) Rapido (100ms)  2) Normal (300ms)  3) Lento (800ms)" << std::endl;
+                std::cout << "Opcion: ";
+                int vel;
+                std::cin >> vel;
+                int delayMs = 300;
+                if (vel == 1) delayMs = 100;
+                else if (vel == 3) delayMs = 800;
+                Impresora::visualizarSolucion(*tablero, solucion, delayMs);
+                break;
+            }
+
+            case 7: {
                 std::cout << "Saliendo..." << std::endl;
                 break;
             }
