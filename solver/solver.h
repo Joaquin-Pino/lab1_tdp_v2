@@ -66,5 +66,5 @@ public:
     // Devuelve un arreglo de Estado* (terminado en nullptr) con el camino solución,
     // o nullptr si no existe solución dentro del stepLimit.
     // El llamador es responsable de liberar el arreglo y sus elementos.
-    Estado** resolver(Estado* estadoInicial, bool force);
+    Estado** resolver(Estado* estadoInicial, bool force = false);
 };

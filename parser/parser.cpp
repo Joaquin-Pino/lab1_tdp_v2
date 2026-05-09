@@ -137,7 +137,7 @@ void Parser::parsearBloques() {
     }
 
     // Copiar del arreglo temporal al arreglo final de piezas. Esto evita reallocs o un MAX_TEMP fijo en el arreglo final.
-    piezas = new Pieza[numPiezas];
+    piezas = numPiezas > 0 ? new Pieza[numPiezas] : nullptr;
     for (int i = 0; i < numPiezas; i++)
         piezas[i] = temp[i];
 }
@@ -156,7 +156,7 @@ void Parser::parsearSalidas() {
 
     // 
     fseek(archivo, posInicio, SEEK_SET);
-    salidas = new Salida[numSalidas];
+    salidas = numSalidas > 0 ? new Salida[numSalidas] : nullptr;
     int idx = 0;
 
     while (idx < numSalidas && leerLinea()) {
@@ -246,7 +246,7 @@ void Parser::parsearCompuertas() {
         numCompuertas++;
     }
 
-    compuertas = new Compuerta[numCompuertas];
+    compuertas = numCompuertas > 0 ? new Compuerta[numCompuertas] : nullptr;
     for (int i = 0; i < numCompuertas; i++)
         compuertas[i] = temp[i];
 }

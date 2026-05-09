@@ -26,15 +26,15 @@ Tablero::Tablero(const Tablero& otro)
         matriz[i] = otro.matriz[i];
 
     // Copiar cada pieza usando su operator= (que duplica la geometría).
-    piezas = new Pieza[numPiezas];
+    piezas    = numPiezas    > 0 ? new Pieza[numPiezas]          : nullptr;
     for (int i = 0; i < numPiezas; i++)
         piezas[i] = otro.piezas[i];
 
-    salidas = new Salida[numSalidas];
+    salidas   = numSalidas   > 0 ? new Salida[numSalidas]        : nullptr;
     for (int i = 0; i < numSalidas; i++)
         salidas[i] = otro.salidas[i];
 
-    compuertas = new Compuerta[numCompuertas];
+    compuertas = numCompuertas > 0 ? new Compuerta[numCompuertas] : nullptr;
     for (int i = 0; i < numCompuertas; i++)
         compuertas[i] = otro.compuertas[i];
 }
@@ -59,15 +59,15 @@ Tablero& Tablero::operator=(const Tablero& otro) {
     for (int i = 0; i < w * h; i++)
         matriz[i] = otro.matriz[i];
 
-    piezas = new Pieza[numPiezas];
+    piezas    = numPiezas    > 0 ? new Pieza[numPiezas]          : nullptr;
     for (int i = 0; i < numPiezas; i++)
         piezas[i] = otro.piezas[i];
 
-    salidas = new Salida[numSalidas];
+    salidas   = numSalidas   > 0 ? new Salida[numSalidas]        : nullptr;
     for (int i = 0; i < numSalidas; i++)
         salidas[i] = otro.salidas[i];
 
-    compuertas = new Compuerta[numCompuertas];
+    compuertas = numCompuertas > 0 ? new Compuerta[numCompuertas] : nullptr;
     for (int i = 0; i < numCompuertas; i++)
         compuertas[i] = otro.compuertas[i];
 

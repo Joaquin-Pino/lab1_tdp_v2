@@ -28,7 +28,7 @@ Estado::Estado(int numPiezas, int numCompuertas, int numSalidas,
     for (int i = 0; i < numSalidas; i++)
         this->largoSalidas[i] = largoSalidas[i];
 
-    memcpy(this->movimiento, movimiento, 9);
+    strncpy(this->movimiento, movimiento, 9);
     this->movimiento[9] = '\0';
 
     this->ocupacion = new short[width * height];
