@@ -342,10 +342,11 @@ bool Tablero::piezaPuedeCruzarCompuerta(int id, direccion dir, const Estado& est
             if (c.tipo == COMPUERTA) {
                 compuertaId = c.id;
                 gatePos = (dx != 0) ? nCol : nFila;
+            } else if (c.tipo == PARED) {
+                return false; // pared bloquea el portal — la pieza no está alineada con la compuerta
             }
         }
     }
-     // el movimiento normal ya está bloqueado
 
     if (compuertaId == -1) return false; // no hay compuerta en el próximo paso
 
