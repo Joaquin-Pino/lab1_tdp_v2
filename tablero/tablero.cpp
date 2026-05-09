@@ -144,12 +144,9 @@ bool Tablero::piezaPuedeMoverse(int id, direccion dir, const Estado& estado) {
             // El cruce se hace con el movimiento de portal (piezaPuedeCruzarCompuerta).
             if (c.tipo == COMPUERTA) return false;
 
-            // verificar que la pieza no pase por salidas, las salidas de otros colores son paredes sólidas.
-            if (c.tipo == SALIDA) {
-                Salida& s = salidas[c.id];
-                if (s.getColor() != pieza.getColor())
-                    return false;
-            }
+            // Las celdas de salida son impassables para movimiento normal.
+            // Las piezas solo salen vía piezaPuedeSalir/clonarYSacar, nunca moviéndose dentro de la celda.
+            if (c.tipo == SALIDA) return false;
         }
     }
 

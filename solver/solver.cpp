@@ -97,9 +97,8 @@ int Solver::generarVecinos(Estado* actual, bool force) {
             prepararVecino(vecino, actual, mov, force);
 
             vecinosTemp[count++] = vecino;
-            if (count >= maxVecinos) return count; // protección contra overflow del buffer
-            break;
-            continue;
+            if (count >= maxVecinos) return count;
+            continue; // solo la salida para esta pieza; seguir con las demás
         }
 
         // Intentar mover la pieza 1 celda en cada dirección (o portal si hay compuerta).
@@ -253,74 +252,56 @@ Estado** Solver::resolver(Estado* estadoInicial, bool force) {
 
 int Solver::calcularHeuristica(const Estado& estado) const {
     int total = 0;
-    int W = tablero->getW();
-    int H = tablero->getH();
 
     for (int i = 0; i < tablero->getNumPiezas(); i++) {
-        if (estado.piezaYaSalio(i)) continue;
+        if (estado.piezaYaSalio(i)) continue; // pieza ya fuera, no contribuye al costo restante
 
         coordenada pos = estado.getPosPiezas()[i];
         Pieza& pieza = tablero->getPiezas()[i];
         int pw = pieza.getAncho();
         int ph = pieza.getAlto();
 
-        int mejorCosto = -1;
+        int mejorCosto = -1; // -1 significa que no se encontró ninguna salida compatible aún
 
         for (int j = 0; j < tablero->getNumSalidas(); j++) {
             Salida& salida = tablero->getSalidas()[j];
-            
-            if (salida.getColor() != pieza.getColor()) continue;
-            if (!tablero->piezaPodriaSalir(pieza, salida)) continue;
+            if (salida.getColor() != pieza.getColor()) continue;        // color incompatible
+            if (!tablero->piezaPodriaSalir(pieza, salida)) continue;    // pieza nunca cabrá
 
             coordenada ps = salida.getPos();
-            
-            // 1. Distancia Base Mejorada (Incorporando el Span LF de la salida)
-            // Usamos la lógica de la cota admisible para obtener una base geométrica 
-            // perfecta desde el bounding box de la pieza hacia el span de la salida.
-            int L = (salida.getLf() > salida.getLi()) ? salida.getLf() : salida.getLi();
-            int perpCost = 0, parCost = 0;
 
-            if (salida.getEsHorizontal()) {
-                int adjRow = (ps.y == 0) ? 1 : ((ps.y == H - 1) ? H - 2 : ps.y);
-                
-                if (pos.y > adjRow) perpCost = pos.y - adjRow;
-                else if (pos.y + ph - 1 < adjRow) perpCost = adjRow - (pos.y + ph - 1);
-
-                if (pos.x < ps.x) parCost = ps.x - pos.x;
-                else if (pos.x + pw - 1 > ps.x + L - 1) parCost = (pos.x + pw - 1) - (ps.x + L - 1);
-            } else {
-                int adjCol = (ps.x == 0) ? 1 : ((ps.x == W - 1) ? W - 2 : ps.x);
-                
-                if (pos.x > adjCol) perpCost = pos.x - adjCol;
-                else if (pos.x + pw - 1 < adjCol) perpCost = adjCol - (pos.x + pw - 1);
-
-                if (pos.y < ps.y) parCost = ps.y - pos.y;
-                else if (pos.y + ph - 1 > ps.y + L - 1) parCost = (pos.y + ph - 1) - (ps.y + L - 1);
+            // Calcular la distancia Manhattan desde el BORDE de la pieza hasta la salida,
+            // no desde su centro. Si la salida está dentro del bounding box, la distancia es 0.
+            int dx = 0, dy = 0;
+            if  (ps.x < pos.x) {      
+                dx = pos.x - ps.x;// salida a la izquierda
+            } else if (ps.x > pos.x+pw-1)  {
+                dx = ps.x - (pos.x + pw-1); // salida a la derecha
             }
 
-            int distBase = perpCost + parCost;
+            if (ps.y < pos.y) {
+                dy = pos.y - ps.y;  // salida arriba
+            } else if (ps.y > pos.y+ph-1)  {
+                dy = ps.y - (pos.y + ph-1); // salida abajo
+            }
 
-            // 2. Conflicto Lineal Adaptado (Penalización Informada)
+            int dist = dx + dy;
+
+            // Sumar penalización por piezas que bloquean el camino hacia esta salida.
+            // Se divide entre 2 porque cada pieza bloqueante ya está siendo contada
+            // en su propia heurística, y contarla doble sobreestimaría el costo total.
             int bloqueos = contarBloqueos(i, pos, ps, estado);
-            int penalizacion = bloqueos / 2;
+            ///int bloqueos = 0;
+            int costo    = dist + bloqueos / 2;
 
-            // Detección de "Conflicto en Meta" (Linear Conflict): 
-            // Si la pieza ya está en la fila/columna adyacente a la salida (distBase == 0) 
-            // pero el raycast detecta obstáculos (bloqueos > 0), estamos ante un deadlock local.
-            // Sumar +2 es matemáticamente seguro porque despejar el bloqueo cuesta >= 1
-            // y avanzar la pieza actual a la meta cuesta >= 1.
-            if (distBase == 0 && bloqueos > 0) {
-                penalizacion += 2; 
-            }
-
-            int costo = distBase + penalizacion;
-
-            if (mejorCosto == -1 || costo < mejorCosto) {
+            // Quedarse con la salida que da el menor costo estimado.
+            if (mejorCosto == -1 || costo < mejorCosto)
                 mejorCosto = costo;
-            }
         }
 
+        // Si no hay ninguna salida viable, contribuir con 0 (mejor que bloquear la búsqueda).
         if (mejorCosto == -1) mejorCosto = 0;
+
         total += mejorCosto;
     }
     return total;
