@@ -23,7 +23,7 @@ private:
 
     // Genera todos los vecinos válidos del estado `actual` y los almacena en vecinosTemp.
     // Devuelve la cantidad de vecinos generados.
-    int generarVecinos(Estado* actual);
+    int generarVecinos(Estado* actual, bool force);
 
     // Sigue la cadena de punteros parent desde el estado meta hasta el inicial
     // y devuelve un arreglo de Estado* (copias) terminado en nullptr.
@@ -53,7 +53,7 @@ private:
 
     // Post-procesa un vecino recién creado: actualiza elementos dinámicos (compuertas, salidas),
     // calcula h y f, y registra el parent y el movimiento que lo generó.
-    void prepararVecino(Estado* vecino, Estado* actual, char mov[10]) const;
+    void prepararVecino(Estado* vecino, Estado* actual, char mov[10], bool force) const;
 
 public:
     Solver(Tablero* t);
@@ -66,5 +66,5 @@ public:
     // Devuelve un arreglo de Estado* (terminado en nullptr) con el camino solución,
     // o nullptr si no existe solución dentro del stepLimit.
     // El llamador es responsable de liberar el arreglo y sus elementos.
-    Estado** resolver(Estado* estadoInicial);
+    Estado** resolver(Estado* estadoInicial, bool force);
 };

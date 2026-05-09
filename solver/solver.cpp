@@ -48,7 +48,7 @@ Solver::~Solver() {
     delete[] vecinosTemp;
 }
 
-void Solver::prepararVecino(Estado* vecino, Estado* actual, char mov[10]) const {
+void Solver::prepararVecino(Estado* vecino, Estado* actual, char mov[10], bool force) const {
     // Actualizar el color de cada compuerta según el stepUsed del vecino
     // (puede haber cambiado si el nuevo step cruzó un múltiplo del `paso`).
     for (int i = 0; i < tablero->getNumCompuertas(); i++)
@@ -61,14 +61,17 @@ void Solver::prepararVecino(Estado* vecino, Estado* actual, char mov[10]) const 
     // Calcular h y f para que el heap pueda ordenar este vecino correctamente.
     int hv = calcularHeuristica(*vecino);
     vecino->setH(hv);
-    vecino->setF(vecino->getStepUsed() + hv);
+    int ponderacion = 1;
+    if (force) {ponderacion = 3;}
+    
+    vecino->setF(vecino->getStepUsed() + hv * ponderacion);
 
     // Registrar el estado padre para poder reconstruir el camino al llegar a la meta.
     vecino->setParent(actual);
     vecino->setMovimiento(mov);
 }
 
-int Solver::generarVecinos(Estado* actual) {
+int Solver::generarVecinos(Estado* actual, bool force) {
     int   count    = 0;
     int   numPiezas = tablero->getNumPiezas();
     int   w         = tablero->getW();
@@ -91,7 +94,7 @@ int Solver::generarVecinos(Estado* actual) {
 
             char mov[10];
             snprintf(mov, 10, "S%d", pieza.getId()); // formato de salida: "S<idExterno>"
-            prepararVecino(vecino, actual, mov);
+            prepararVecino(vecino, actual, mov, force);
 
             vecinosTemp[count++] = vecino;
             if (count >= maxVecinos) return count; // protección contra overflow del buffer
@@ -116,7 +119,7 @@ int Solver::generarVecinos(Estado* actual) {
 
             char mov[10];
             snprintf(mov, 10, "%c%d,1", dirChar[d], pieza.getId());
-            prepararVecino(vecino, actual, mov);
+            prepararVecino(vecino, actual, mov, force);
 
             vecinosTemp[count++] = vecino;
             if (count >= maxVecinos) return count;
@@ -150,7 +153,7 @@ Estado** Solver::reconstruirCamino(Estado* final) {
     return camino;
 }
 
-Estado** Solver::resolver(Estado* estadoInicial) {
+Estado** Solver::resolver(Estado* estadoInicial, bool force) {
     nodosGenerados = 1; // el estado inicial cuenta como el primer nodo generado
     nodosVisitados = 0;
 
@@ -207,7 +210,7 @@ Estado** Solver::resolver(Estado* estadoInicial) {
         // hay piezas que se bloquean entre sí (caso típico de mapas densos como xd.txt).
         int margen = tablero->getNumPiezas() / 2 + 1;
 
-        int numVecinos = generarVecinos(actual);
+        int numVecinos = generarVecinos(actual, force);
         nodosGenerados += numVecinos;
         for (int i = 0; i < numVecinos; i++) {
             // Poda por g: el vecino ya excedió el presupuesto.
@@ -217,7 +220,9 @@ Estado** Solver::resolver(Estado* estadoInicial) {
             }
             // Poda por f con margen (heurística informada): poda agresiva pero no estrictamente
             // segura — puede descartar caminos válidos si la informada sobreestima más que el margen.
-            if (vecinosTemp[i]->getF() > tablero->getStepLimit() + margen) {
+            // Con force, f = g + 3*h, así que el umbral normal eliminaría estados válidos;
+            // se desactiva esta poda y se deja solo la poda por g (arriba).
+            if (!force && vecinosTemp[i]->getF() > tablero->getStepLimit() + margen) {
                 delete vecinosTemp[i];
                 continue;
             }

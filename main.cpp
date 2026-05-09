@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <getopt.h>
 #include "tablero/tablero.h"
 #include "impresora/impresora.h"
 #include "solver/solver.h"
@@ -7,6 +8,8 @@
 #include "verificador/verificador.h"
 
 void menuPrincipal() {
+    
+
     std::cout << "\n=== COLOR BLOCK JAM SOLVER ===" << std::endl;
     std::cout << "1. Cargar archivo de configuracion" << std::endl;
     std::cout << "2. Resolver" << std::endl;
@@ -17,7 +20,34 @@ void menuPrincipal() {
     std::cout << "Opcion: ";
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+    bool force_flag = false;
+    int opt;
+
+    static struct option long_options[] = {
+        {"force", no_argument, 0, 'f'}, // --force hará lo mismo que -f
+        {0, 0, 0, 0} // Este "cero" al final es obligatorio para indicar el fin del arreglo
+    };
+    int option_index = 0;
+
+    while ((opt = getopt_long(argc, argv, "f", long_options, &option_index)) != -1) {
+        switch (opt) {
+            case 'f':
+                // ¡Aquí entra tanto si el usuario escribe -f como si escribe --force!
+                force_flag = true; 
+                break;
+            case '?':
+                std::cerr << "Error: Opcion desconocida.\n";
+                return 1;
+            default:
+                return 1;
+        }
+    }
+
+    if (force_flag) {
+        std::cout << "Flag --force activado. Se forzará la resolución. no se garantiza solucion optima\n";
+    }
+
     Tablero* tablero       = nullptr;
     Estado*  estadoInicial = nullptr;
     Estado** solucion      = nullptr; // arreglo terminado en nullptr; cada elemento es un Estado*
@@ -81,7 +111,7 @@ int main() {
                 // El Solver toma ownership del estado que recibe; pasamos una copia
                 // para preservar estadoInicial y poder seguir usándolo (mostrar, verificar).
                 Estado* estadoCopia = new Estado(*estadoInicial);
-                solucion = solver.resolver(estadoCopia);
+                solucion = solver.resolver(estadoCopia, force_flag);
 
                 clock_t fin    = clock();
                 double  tiempoMs = (double)(fin - inicio) / CLOCKS_PER_SEC * 1000.0;

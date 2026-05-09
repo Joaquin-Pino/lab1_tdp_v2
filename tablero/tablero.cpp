@@ -322,7 +322,7 @@ bool Tablero::piezaPuedeCruzarCompuerta(int id, direccion dir, const Estado& est
     int gatePos = -1; // columna (dx≠0) o fila (dy≠0) donde está la compuerta
 
 
-    if (!piezaPuedeMoverse(id, dir, estado)) return false;
+    // if (!piezaPuedeMoverse(id, dir, estado)) return false;
     // Verificar que el "próximo paso" en dirección dir sea válido:
     // ninguna celda activa debe chocarse con una pared u otra pieza,
     // y al menos una debe dar con una celda de compuerta.
