@@ -115,7 +115,7 @@ void Parser::parsearBloques() {
 
         // leemos el formato esperado: ID=n COLOR=c WIDTH=n HEIGHT=n INIT_X=n INIT_Y=n [GEOMETRY=...]
         if (sscanf(lineaActual, "%d COLOR=%c WIDTH=%d HEIGHT=%d INIT_X=%d INIT_Y=%d",
-                   &id, &colorChar, &bw, &bh, &initX, &initY) != 6) continue;
+                   &id, &colorChar, &bw, &bh, &initY, &initX) != 6) continue;
         
         // creamos la geometria de la peiza
         bool* geom = new bool[bw * bh];
@@ -167,7 +167,7 @@ void Parser::parsearSalidas() {
 
         // formato: COLOR=c X=x Y=y ORIENTATION=H,V LI=n LF=n STEP=n
         if (sscanf(lineaActual, "COLOR=%c X=%d Y=%d ORIENTATION=%c LI=%d LF=%d STEP=%d",
-                   &colorChar, &x, &y, &orient, &li, &lf, &paso) != 7) continue;
+                   &colorChar, &y, &x, &orient, &li, &lf, &paso) != 7) continue;
 
         bool esHorizontal = (orient == 'H');
         coordenada pos = {x, y};
@@ -212,7 +212,7 @@ void Parser::parsearCompuertas() {
 
         // formato: [COLOR=c] X=x Y=y ORIENTATION=H,V LI=n CI=<char|int> CF=<char|int> STEP=n
         if (sscanf(linea, "X=%d Y=%d ORIENTATION=%c LI=%d CI=%15s CF=%15s STEP=%d",
-           &x, &y, &orient, &li, ciStr, cfStr, &paso) != 7) continue;
+           &y, &x, &orient, &li, ciStr, cfStr, &paso) != 7) continue;
 
         // Ci/Cf admiten dos formatos: letra (CI=a) o código ASCII (CI=97).
         // Si todos los caracteres son dígitos lo interpretamos como entero,
