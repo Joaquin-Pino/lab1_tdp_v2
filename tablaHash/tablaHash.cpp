@@ -27,9 +27,6 @@ unsigned int TablaHash::calcularHash(const Estado* e) const {
     return e->generarHash() % (unsigned int)capacidad;
 }
 
-unsigned int TablaHash::calcularHashConCapacidad(const Estado* e, int cap) const {
-    return e->generarHash() % (unsigned int)cap;
-}
 
 bool TablaHash::sonIguales(const Estado* a, const Estado* b) const {
     // Si difieren en número de piezas, son incompatibles (no deberían existir en la misma tabla).
@@ -70,17 +67,14 @@ void TablaHash::rehash() {
     for (int i = 0; i < nuevaCapacidad; i++)
         nuevaTabla[i] = nullptr;
 
-    // Reubicar cada nodo existente en su nuevo bucket sin crear ni destruir nodos.
+    // Reubicar cada nodo existente usando el hash ya cacheado (sin recomputar).
     for (int i = 0; i < capacidad; i++) {
         Nodo* actual = tabla[i];
         while (actual) {
-            Nodo* siguiente = actual->siguiente; // guardar siguiente antes de redirigir
-
-            // Calcular el nuevo bucket con la nueva capacidad y encadenar al frente.
-            unsigned int nuevoIdx   = calcularHashConCapacidad(actual->estado, nuevaCapacidad);
+            Nodo* siguiente         = actual->siguiente;
+            unsigned int nuevoIdx   = actual->hashCompleto % (unsigned int)nuevaCapacidad;
             actual->siguiente       = nuevaTabla[nuevoIdx];
             nuevaTabla[nuevoIdx]    = actual;
-
             actual = siguiente;
         }
     }
@@ -95,18 +89,20 @@ void TablaHash::insertar(Estado* e) {
     if ((tamano + 1) * 4 > capacidad * 3)
         rehash();
 
-    // Insertar al frente de la lista del bucket correspondiente (O(1)).
-    unsigned int idx = calcularHash(e);
-    tabla[idx] = new Nodo(e, tabla[idx]);
+    unsigned int h   = e->generarHash();
+    unsigned int idx = h % (unsigned int)capacidad;
+    tabla[idx] = new Nodo(e, tabla[idx], h);
     tamano++;
 }
 
 bool TablaHash::existe(const Estado* e) const {
-    // Calcular el bucket y recorrer la lista encadenada buscando un estado igual.
-    unsigned int idx  = calcularHash(e);
+    unsigned int h      = e->generarHash();
+    unsigned int idx    = h % (unsigned int)capacidad;
     Nodo*        actual = tabla[idx];
     while (actual) {
-        if (sonIguales(actual->estado, e)) return true;
+        // Comparar hash completo primero: descarta colisiones de bucket en O(1)
+        // sin entrar al costoso sonIguales.
+        if (actual->hashCompleto == h && sonIguales(actual->estado, e)) return true;
         actual = actual->siguiente;
     }
     return false;

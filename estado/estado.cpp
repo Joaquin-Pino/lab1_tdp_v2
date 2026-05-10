@@ -136,29 +136,19 @@ bool Estado::jugoTerminado(int numPiezas) const {
 }
 
 unsigned int Estado::generarHash() const {
-    unsigned int hash = 0;
-
-    // Se mezclan primos grandes distintos para cada campo y posición,
-    // de modo que dos estados que solo difieren en una pieza produzcan hashes muy distintos
-    // y las colisiones en la TablaHash se mantengan bajas.
+    // FNV-1a: cada byte mezcla con XOR-then-multiply, sensible al orden y sin cancelaciones.
+    unsigned int hash = 2166136261u;
     for (int i = 0; i < numPiezas; i++) {
-        hash ^= (unsigned int)(posPiezas[i].x * 73856093)
-              ^ (unsigned int)(posPiezas[i].y * 19349663)
-              ^ (unsigned int)(i * 83492791);  // el índice diferencia piezas en misma posición
+        hash ^= (unsigned int)posPiezas[i].x; hash *= 16777619u;
+        hash ^= (unsigned int)posPiezas[i].y; hash *= 16777619u;
     }
-
+    hash ^= piezasSalidas; hash *= 16777619u;
     for (int i = 0; i < numCompuertas; i++) {
-        hash ^= (unsigned int)(colorCompuertas[i] * 49979693)
-              ^ (unsigned int)(i * 15485863);
+        hash ^= (unsigned int)colorCompuertas[i]; hash *= 16777619u;
     }
-
     for (int i = 0; i < numSalidas; i++) {
-        hash ^= (unsigned int)(largoSalidas[i] * 32452843)
-              ^ (unsigned int)(i * 25165843);
+        hash ^= (unsigned int)largoSalidas[i]; hash *= 16777619u;
     }
-
-    hash ^= piezasSalidas * 104729;
-
     return hash;
 }
 

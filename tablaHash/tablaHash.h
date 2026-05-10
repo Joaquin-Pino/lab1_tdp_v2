@@ -14,9 +14,10 @@
 class TablaHash {
 private:
     struct Nodo {
-        Estado* estado;
-        Nodo*   siguiente;
-        Nodo(Estado* e, Nodo* sig) : estado(e), siguiente(sig) {}
+        Estado*      estado;
+        Nodo*        siguiente;
+        unsigned int hashCompleto; // hash pre-módulo, cacheado para rehash y rechazo rápido
+        Nodo(Estado* e, Nodo* sig, unsigned int h) : estado(e), siguiente(sig), hashCompleto(h) {}
     };
 
     Nodo** tabla;    // arreglo de punteros a lista encadenada, uno por bucket
@@ -25,8 +26,6 @@ private:
 
     // Calcula el índice del bucket para el estado dado.
     unsigned int calcularHash(const Estado* e) const;
-    // Igual pero con capacidad explícita (usado durante rehash).
-    unsigned int calcularHashConCapacidad(const Estado* e, int cap) const;
 
     // Compara dos estados por contenido (posiciones, piezasSalidas, compuertas, salidas).
     // No compara stepUsed: dos estados con la misma configuración pero diferente costo
